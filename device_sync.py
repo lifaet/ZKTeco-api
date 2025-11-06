@@ -212,12 +212,6 @@ def main():
                             logger.error(f"Record processing error: {e}")
 
                     # periodic cleanup of device buffer to avoid duplicates/memory
-                    if datetime.now().minute % 30 == 0:
-                        try:
-                            conn_dev.clear_attendance()
-                            logger.info("Cleared device attendance buffer")
-                        except Exception:
-                            pass
 
                     time.sleep(POLL_INTERVAL)
 
