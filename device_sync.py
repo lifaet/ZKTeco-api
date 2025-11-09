@@ -14,7 +14,7 @@ from config import (
 )
 
 
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = 'DEBUG'
 
 
 def setup_logging():
