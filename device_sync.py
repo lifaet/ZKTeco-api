@@ -211,8 +211,6 @@ def main():
                         except Exception as e:
                             logger.error(f"Record processing error: {e}")
 
-                    # periodic cleanup of device buffer to avoid duplicates/memory
-
                     time.sleep(POLL_INTERVAL)
 
             except KeyboardInterrupt:
