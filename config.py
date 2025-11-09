@@ -12,5 +12,4 @@ TABLE_NAME = 'attendances'
 
 API_TOKEN = "securetoken123"
 API_PORT = 8080
-LOG_LEVEL = 'INFO'  # options: DEBUG, INFO, WARNING, ERROR
 # ----------------------------------------
