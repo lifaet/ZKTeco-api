@@ -375,16 +375,17 @@ $(document).ready(function(){
 
     $('#apply-filter').click(function(){ table.ajax.reload(); });
 
-    // first check last punch (store numeric id)
+    // first check last punch (store numeric id) and only start polling after we have attempted
     $.ajax({ url: '/api/check-latest', method: 'GET', dataType: 'json', cache: false })
         .done(function(res){
             lastCheckId = res && res.id ? (parseInt(res.id, 10) || 0) : lastCheckId;
+            // start polling after initial successful fetch
+            setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
         }).fail(function(xhr, status){
             console.debug('initial check-latest failed', status, xhr && xhr.status);
+            // even on failure, start polling so we can recover later
+            setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
         });
-
-    // check every CHECK_LATEST_INTERVAL_MS milliseconds for new punches
-    setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
 
     // Handle Edit button click
     $('#attendanceTable').on('click', '.edit-btn', function() {
