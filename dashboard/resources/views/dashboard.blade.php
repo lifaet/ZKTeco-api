@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Dynamic Attendance Dashboard</title>
+<link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
@@ -157,6 +158,9 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
 let table;
 let currentType = 'daily';
 let lastCheckId = 0; // last known entry ID
+// Polling interval (ms) for /api/check-latest. Lower values = more frequent checks.
+// Be careful lowering too far: very frequent polling increases DB/load. Default 2000ms = 2s.
+const CHECK_LATEST_INTERVAL_MS = 2000;
 
 function loadUsersIntoSelect() {
     $.getJSON('/api/users').done(function(users){
@@ -379,8 +383,8 @@ $(document).ready(function(){
             console.debug('initial check-latest failed', status, xhr && xhr.status);
         });
 
-    // check every 10 seconds for new punches
-    setInterval(checkNewPunch, 10000);
+    // check every CHECK_LATEST_INTERVAL_MS milliseconds for new punches
+    setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
 
     // Handle Edit button click
     $('#attendanceTable').on('click', '.edit-btn', function() {
