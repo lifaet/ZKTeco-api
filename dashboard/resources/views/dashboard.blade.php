@@ -221,11 +221,59 @@ function showToast(title, message){
 }
 
 function checkNewPunch(){
-    $.getJSON('/api/check-latest', function(res){
-        if (res && res.id && res.id > lastCheckId) {
-            lastCheckId = res.id;
-            showToast("New Punch Recorded", `User ${res.user_id} punched at ${res.time} on ${res.date}`);
-            table.ajax.reload(null, false); // reload data silently
+    // Use $.ajax with cache:false to avoid cached responses from proxies
+    $.ajax({
+        url: '/api/check-latest',
+        method: 'GET',
+        dataType: 'json',
+        cache: false,
+        data: { last_id: lastCheckId }
+    }).done(function(res){
+        // Defensive extraction: API might return {id:...} or {data:{id:...}} or {latest:{id:...}}
+        function extractId(r){
+            if (!r) return 0;
+            if (r.id) return parseInt(r.id,10) || 0;
+            if (r.latest && r.latest.id) return parseInt(r.latest.id,10) || 0;
+            if (r.data && r.data.id) return parseInt(r.data.id,10) || 0;
+            // try first element if array
+            if (Array.isArray(r) && r.length && r[0].id) return parseInt(r[0].id,10) || 0;
+            return 0;
+        }
+
+        const id = extractId(res);
+        console.debug('check-latest response', res, 'extractedId', id, 'lastCheckId', lastCheckId);
+
+        // If we haven't initialized lastCheckId yet (fresh page or initial failure),
+        // set it to the server-provided id but DO NOT show a toast — this prevents
+        // showing the current latest row as "new" on every poll when the server
+        // falls back to returning the most recent row.
+        if (!lastCheckId || lastCheckId === 0) {
+            lastCheckId = id;
+            return;
+        }
+
+        if (id && id > lastCheckId) {
+            lastCheckId = id;
+            // Build a friendly message. If specific fields exist, show them; otherwise show a generic notice.
+            const user = res.user_id || res.user || null;
+            const time = res.time || res.timestamp || null;
+            const date = res.date || null;
+            let message = '';
+            if (user || time || date) {
+                // prefer a punch-style message when details available
+                message = `User ${user || 'Unknown'}` + (time ? ` recorded at ${time}` : '') + (date ? ` on ${date}` : '');
+            } else {
+                message = `New record added (id: ${id})`;
+            }
+            showToast('New Data', message);
+            if (table && table.ajax && typeof table.ajax.reload === 'function') {
+                table.ajax.reload(null, false); // reload data silently
+            }
+        }
+    }).fail(function(xhr, status, err){
+        // ignore 204/no-content or silent failures, but log others for debugging
+        if (xhr && xhr.status && xhr.status !== 204) {
+            console.debug('check-latest request failed', xhr.status, status, err);
         }
     });
 }
@@ -267,7 +315,7 @@ $(document).ready(function(){
             { data: 'status', render: function(data, type, row) {
                 // Map status codes to short labels for the dashboard
                 // 1 -> FP, 4 -> RF, otherwise show 'Other'
-                if (data == 1 || data === '1') return 'FINGERPRINT';
+                if (data == 1 || data === '1') return 'FINGERID';
                 if (data == 4 || data === '4') return 'RFID';
                 return 'Other';
             } },
@@ -323,12 +371,15 @@ $(document).ready(function(){
 
     $('#apply-filter').click(function(){ table.ajax.reload(); });
 
-    // first check last punch
-    $.getJSON('/api/check-latest', function(res){
-        if (res && res.id) lastCheckId = res.id;
-    });
+    // first check last punch (store numeric id)
+    $.ajax({ url: '/api/check-latest', method: 'GET', dataType: 'json', cache: false })
+        .done(function(res){
+            lastCheckId = res && res.id ? (parseInt(res.id, 10) || 0) : lastCheckId;
+        }).fail(function(xhr, status){
+            console.debug('initial check-latest failed', status, xhr && xhr.status);
+        });
 
-    // check every 10 seconds
+    // check every 10 seconds for new punches
     setInterval(checkNewPunch, 10000);
 
     // Handle Edit button click
