@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class AttendanceController extends Controller
 {
@@ -25,79 +24,73 @@ class AttendanceController extends Controller
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 10);
 
-        // We'll perform grouping at the database level to avoid loading the entire table into PHP.
-        // Group by user_id and date(timestamp). Use COUNT DISTINCT for totals.
+        // Helper to group a collection of Attendance models by user+date
+        $groupCollection = function($collection) {
+            return $collection->groupBy(function($item) {
+                return $item->user_id . '_' . Carbon::parse($item->timestamp)->format('Y-m-d');
+            })->map(function($records) {
+                $first = $records->sortBy('timestamp')->first();
+                $last  = $records->sortByDesc('timestamp')->first();
 
-        // Base filters applied to queries
-        $baseQuery = DB::table('attendances');
+                $inTime  = Carbon::parse($first->timestamp)->format('H:i:s');
+                $outTime = ($first->id !== $last->id) ? Carbon::parse($last->timestamp)->format('H:i:s') : '';
+                $workTime = '';
+
+                if ($outTime) {
+                    $diff = Carbon::parse($last->timestamp)->diff(Carbon::parse($first->timestamp));
+                    $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
+                }
+
+                return [
+                    'user_id'     => $first->user_id,
+                    'date'        => Carbon::parse($first->timestamp)->format('Y-m-d'),
+                    'first_punch' => $inTime,
+                    'last_punch'  => $outTime,
+                    'work_time'   => $workTime,
+                    'punch'       => $last->punch ?? '',
+                    'status'      => $last->status ?? '',
+                ];
+            })->values();
+        };
+
+        // Get all records for computing totals (grouped total)
+        $allRecords = Attendance::orderBy('timestamp', 'desc')->get();
+        $allGrouped = $groupCollection($allRecords);
+        $recordsTotal = $allGrouped->count();
+
+        // Build filtered query
+        $filteredQuery = Attendance::query();
+
         if ($type === 'daily' && $date) {
-            $baseQuery = $baseQuery->whereDate('timestamp', $date);
+            $filteredQuery->whereDate('timestamp', $date);
         }
         if ($type === 'monthly' && $month) {
-            $baseQuery = $baseQuery->whereRaw("DATE_FORMAT(timestamp, '%Y-%m') = ?", [$month]);
+            // month expected in YYYY-MM
+            $filteredQuery->whereRaw("DATE_FORMAT(timestamp, '%Y-%m') = ?", [$month]);
         }
         if ($type === 'user' && $user) {
-            $baseQuery = $baseQuery->where('user_id', $user);
+            $filteredQuery->where('user_id', $user);
         }
+
         if ($search = $request->input('search.value')) {
-            $baseQuery = $baseQuery->where(function($q) use ($search) {
+            $filteredQuery->where(function($q) use ($search) {
                 $q->where('user_id', 'like', "%$search%")
                   ->orWhere('timestamp', 'like', "%$search%");
             });
         }
 
-        // recordsTotal: count of distinct user+date groups in entire table (no filters)
-        $recordsTotal = DB::table('attendances')
-            ->selectRaw("COUNT(DISTINCT CONCAT(user_id, '_', DATE(timestamp))) as cnt")
-            ->value('cnt');
+        $filteredRecords = $filteredQuery->orderBy('timestamp', 'desc')->get();
+        $groupedFiltered = $groupCollection($filteredRecords);
+        $recordsFiltered = $groupedFiltered->count();
 
-        // recordsFiltered: count of distinct groups after applying filters
-        $recordsFiltered = (clone $baseQuery)
-            ->selectRaw("COUNT(DISTINCT CONCAT(user_id, '_', DATE(timestamp))) as cnt")
-            ->value('cnt');
-
-        // Now get the paged groups
-        $groups = (clone $baseQuery)
-            ->selectRaw("user_id, DATE(timestamp) as date, MIN(timestamp) as first_ts, MAX(timestamp) as last_ts")
-            ->groupBy('user_id', DB::raw("DATE(timestamp)"))
-            ->orderBy('date', 'desc')
-            ->orderBy('user_id')
-            ->offset($start)
-            ->limit($length)
-            ->get();
-
-        // For each group, fetch last record (to get punch/status) and compute derived fields
-        $data = [];
-        foreach ($groups as $g) {
-            $firstPunch = $g->first_ts ? Carbon::parse($g->first_ts)->format('H:i:s') : '';
-            $lastPunch = $g->last_ts ? Carbon::parse($g->last_ts)->format('H:i:s') : '';
-            $workTime = '';
-            if ($g->first_ts && $g->last_ts && $g->last_ts !== $g->first_ts) {
-                $diff = Carbon::parse($g->last_ts)->diff(Carbon::parse($g->first_ts));
-                $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
-            }
-
-            $lastRec = Attendance::where('user_id', $g->user_id)
-                ->whereDate('timestamp', $g->date)
-                ->orderBy('timestamp', 'desc')
-                ->first(['punch', 'status']);
-
-            $data[] = [
-                'user_id' => $g->user_id,
-                'date' => $g->date,
-                'first_punch' => $firstPunch,
-                'last_punch' => $lastPunch,
-                'work_time' => $workTime,
-                'punch' => $lastRec->punch ?? '',
-                'status' => $lastRec->status ?? '',
-            ];
-        }
+        // paginate grouped results
+        $paged = $groupedFiltered->slice($start, $length)->values();
 
         return response()->json([
             'draw' => intval($request->draw),
-            'recordsTotal' => intval($recordsTotal),
-            'recordsFiltered' => intval($recordsFiltered),
-            'data' => $data,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $paged,
         ]);
     }
 
