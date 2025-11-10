@@ -178,4 +178,16 @@ class AttendanceController extends Controller
 
         return response()->json(['message' => 'Records deleted successfully']);
     }
+
+    // Return distinct users for frontend dropdowns
+    public function users()
+    {
+        $users = Attendance::select('user_id')
+            ->distinct()
+            ->orderBy('user_id')
+            ->get()
+            ->map(function($u){ return ['id' => $u->user_id]; });
+
+        return response()->json($users);
+    }
 }

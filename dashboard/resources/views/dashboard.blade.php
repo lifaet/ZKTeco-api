@@ -17,8 +17,12 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
 .sidebar a { color: #fff; text-decoration: none; display: block; padding: 10px 20px; }
 .sidebar a:hover { background: #495057; }
 .content { margin-left: 220px; padding: 20px; }
-.filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1rem; }
-.filters input, .filters select { min-width:150px; }
+.filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1rem; align-items:center }
+.filters input, .filters select { min-width:120px; max-width:220px; }
+
+/* make date and month inputs compact */
+#filter-date, #filter-month { width: 140px !important; }
+#filter-user-select, #filter-user { width: 180px !important; }
 
 /* Toast popup */
 .toast-container {

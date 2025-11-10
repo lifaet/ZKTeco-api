@@ -19,6 +19,8 @@ Route::post('/api/attendance/update', [AttendanceController::class, 'update']);
 Route::post('/api/attendance/delete', [AttendanceController::class, 'delete']);
 // compatibility: frontend expects /api/check-latest — map it here
 Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
+// users endpoint for populating user dropdowns
+Route::get('/api/users', [AttendanceController::class, 'users']);
 // legacy/alternate route
 Route::get('/api/latest-attendance', [AttendanceController::class, 'latest']);
 Route::get('/api-test', function () {
