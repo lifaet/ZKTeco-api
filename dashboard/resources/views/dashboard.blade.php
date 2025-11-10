@@ -71,11 +71,11 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
             <tr>
                 <th>User</th>
                 <th>Date</th>
-                <th>First</th>
-                <th>Last</th>
+                <th>First Punch</th>
+                <th>Last Punch</th>
                 <th>Work Time</th>
-                <th>Punch</th>
-                <th>Status</th>
+                <!-- <th>Punch Type</th> -->
+                <th>VerifyID</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -109,12 +109,12 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
                         <label class="form-label">Last Punch</label>
                         <input type="time" class="form-control" id="edit-last-punch" step="1">
                     </div>
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                         <label class="form-label">Punch</label>
                         <input type="text" class="form-control" id="edit-punch">
-                    </div>
+                    </div> -->
                     <div class="mb-3">
-                        <label class="form-label">Status</label>
+                        <label class="form-label">VerifyID (1 For FINGERPRINT, 4 For RFID)</label>
                         <input type="text" class="form-control" id="edit-status">
                     </div>
                 </form>
@@ -263,8 +263,14 @@ $(document).ready(function(){
             { data: 'first_punch' },
             { data: 'last_punch', render: d => d ? d : '' },
             { data: 'work_time', render: d => d ? d : '' },
-            { data: 'punch', render: d => d ? d : '' },
-            { data: 'status', render: d => d ? d : '' },
+            // { data: 'punch', render: d => d ? d : '' },
+            { data: 'status', render: function(data, type, row) {
+                // Map status codes to short labels for the dashboard
+                // 1 -> FP, 4 -> RF, otherwise show 'Other'
+                if (data == 1 || data === '1') return 'FINGERPRINT';
+                if (data == 4 || data === '4') return 'RFID';
+                return 'Other';
+            } },
             { 
                 data: null,
                 render: function(data, type, row) {
