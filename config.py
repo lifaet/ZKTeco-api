@@ -10,6 +10,6 @@ DB_NAME = 'attendance_db'
 TABLE_NAME = 'attendances'
 
 
-API_TOKEN = "securetoken123"
+API_TOKEN = "test12345"
 API_PORT = 8080
 # ----------------------------------------
