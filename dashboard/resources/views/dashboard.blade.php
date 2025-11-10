@@ -43,22 +43,22 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
 </div>
 
 <div class="content">
-    <div class="filters">
-        <div class="input-group" style="min-width:260px;">
+    <div class="d-flex align-items-center gap-2" style="margin-bottom: 1rem;">
+        <div class="input-group flex-nowrap" style="width:auto;">
             <button class="btn btn-outline-secondary prev-day" title="Previous day" style="display:none;"><i class="bi bi-chevron-left"></i></button>
-            <input type="date" id="filter-date" class="form-control" value="{{ date('Y-m-d') }}">
+            <input type="date" id="filter-date" class="form-control" value="{{ date('Y-m-d') }}" style="width:140px;">
             <button class="btn btn-outline-secondary next-day" title="Next day" style="display:none;"><i class="bi bi-chevron-right"></i></button>
         </div>
 
-        <div class="input-group" style="min-width:220px;">
+        <div class="input-group flex-nowrap" style="width:auto;">
             <button class="btn btn-outline-secondary prev-month" title="Previous month" style="display:none;"><i class="bi bi-chevron-left"></i></button>
-            <input type="month" id="filter-month" class="form-control d-none" value="{{ date('Y-m') }}">
+            <input type="month" id="filter-month" class="form-control d-none" value="{{ date('Y-m') }}" style="width:140px;">
             <button class="btn btn-outline-secondary next-month" title="Next month" style="display:none;"><i class="bi bi-chevron-right"></i></button>
         </div>
 
-        <div class="input-group" style="min-width:220px;">
-            <input type="text" id="filter-user" class="form-control d-none" placeholder="User ID">
-            <select id="filter-user-select" class="form-select d-none"></select>
+        <div class="input-group flex-nowrap" style="width:auto;">
+            <input type="text" id="filter-user" class="form-control d-none" placeholder="User ID" style="width:180px;">
+            <select id="filter-user-select" class="form-select d-none" style="width:180px;"></select>
         </div>
 
         <button id="apply-filter" class="btn btn-primary">Apply</button>
