@@ -12,7 +12,7 @@ This README summarizes the project layout, how to run each component, and notes 
 - `api_server.py` - Small Flask API that exposes attendance data from the configured MySQL DB (token protected).
 - `device_sync.py` - Polls the ZKTeco device and inserts attendance records into MySQL.
 - `config.py` - Shared config for the Python services (DB and device connection settings).
-- `create_db_.py`, `restore_from_log.py` - helper scripts related to DB creation/restore.
+- `create_db_.py` - helper scripts related to DB creation.
 - `req.txt` - Python dependencies for the services (Flask, pymysql, zk, etc.).
 - `dashboard/` - Laravel application (dashboard UI).
 - `logs/` - runtime logs for Python services.
