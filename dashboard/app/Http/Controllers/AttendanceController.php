@@ -96,15 +96,21 @@ class AttendanceController extends Controller
 
     public function latest(Request $request)
     {
+
         $lastId = (int) $request->get('last_id', 0);
 
         // If a last_id is provided, return the next new entry after that id (oldest new entry)
-        $newEntry = Attendance::where('id', '>', $lastId)
-            ->orderBy('id', 'asc')
-            ->first(['id', 'user_id', 'timestamp']);
+        if ($lastId > 0) {
+            $newEntry = Attendance::where('id', '>', $lastId)
+                ->orderBy('id', 'asc')
+                ->first(['id', 'user_id', 'timestamp']);
 
-        // If no last_id provided or no newer entry found, return the most recent attendance (for initial sync)
-        if (! $newEntry) {
+            // If a last_id was provided but no newer entry found, return 204 No Content
+            if (! $newEntry) {
+                return response()->json(null, 204);
+            }
+        } else {
+            // No last_id provided -> return the most recent attendance (for initial sync)
             $newEntry = Attendance::orderBy('id', 'desc')->first(['id', 'user_id', 'timestamp']);
         }
 
