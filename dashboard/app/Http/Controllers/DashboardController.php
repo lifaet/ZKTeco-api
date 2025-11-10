@@ -5,15 +5,58 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\Redirect;
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+
 class DashboardController extends Controller
 {
     public function index()
     {
+        // Require simple session-based auth
+        if (! session('dashboard_logged_in')) {
+            return redirect('/login');
+        }
+
         return view('dashboard');
+    }
+
+    // Show login form
+    public function showLogin()
+    {
+        return view('login');
+    }
+
+    // Process login (very simple password check via env var)
+    public function login(Request $request)
+    {
+        $password = $request->input('password');
+        $expected = env('DASHBOARD_PASSWORD', 'secret');
+
+        if ($password === $expected) {
+            session(['dashboard_logged_in' => true]);
+            return redirect('/');
+        }
+
+        return back()->with('login_error', 'Invalid password');
+    }
+
+    // Logout
+    public function logout(Request $request)
+    {
+        $request->session()->forget('dashboard_logged_in');
+        return redirect('/login');
     }
 
     public function getServerSideData(Request $request)
     {
+        // ensure authenticated for AJAX data
+        if (! session('dashboard_logged_in')) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
         $columns = ['user_id', 'date', 'first_punch', 'last_punch', 'work_time'];
         $length = $request->input('length', 10);
         $start = $request->input('start', 0);
@@ -77,4 +120,9 @@ class DashboardController extends Controller
             "data" => $data,
         ]);
     }
+
+
+
+
+
 }

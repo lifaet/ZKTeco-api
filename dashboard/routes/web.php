@@ -4,6 +4,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AttendanceController;
 
+// auth-free endpoints
+Route::get('/login', [DashboardController::class, 'showLogin']);
+Route::post('/login', [DashboardController::class, 'login']);
+
+// logout
+Route::post('/logout', [DashboardController::class, 'logout']);
+
+// protected dashboard
 Route::get('/', [DashboardController::class, 'index']);
 // Use AttendanceController::data for DataTables server-side processing (returns table-shaped data)
 Route::get('/api/attendance-summary', [AttendanceController::class, 'data']);

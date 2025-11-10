@@ -35,6 +35,7 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
     <a href="#" data-type="daily">Daily</a>
     <a href="#" data-type="monthly">Monthly</a>
     <a href="#" data-type="user">User-wise</a>
+    <a href="#" id="logoutBtn" class="text-danger">Logout</a>
 </div>
 
 <div class="content">
@@ -43,6 +44,8 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
         <input type="month" id="filter-month" class="form-control d-none" value="{{ date('Y-m') }}">
         <input type="text" id="filter-user" class="form-control d-none" placeholder="User ID">
         <button id="apply-filter" class="btn btn-primary">Apply</button>
+        <button id="copy-daily" class="btn btn-outline-secondary d-none">Copy</button>
+        <button id="export-daily" class="btn btn-outline-success d-none">Export to CSV</button>
     </div>
 
     <table id="attendanceTable" class="table table-striped table-bordered">
@@ -62,6 +65,11 @@ body { font-family: 'Inter', sans-serif; background: #f1f3f6; }
 </div>
 
 <div class="toast-container position-fixed"></div>
+
+<!-- hidden logout form -->
+<form id="logoutForm" method="POST" action="/logout" style="display:none;">
+    @csrf
+</form>
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
@@ -137,6 +145,9 @@ function updateFilters(type){
     $('#filter-date').toggleClass('d-none', type !== 'daily');
     $('#filter-month').toggleClass('d-none', type !== 'monthly');
     $('#filter-user').toggleClass('d-none', type !== 'user');
+
+    // Show/hide copy/export buttons only for daily
+    $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
 }
 
 function showToast(title, message){
@@ -170,6 +181,13 @@ $(document).ready(function(){
     $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    // if any AJAX returns 401, redirect to login
+    $(document).ajaxError(function(event, jqxhr){
+        if (jqxhr && jqxhr.status === 401) {
+            window.location = '/login';
         }
     });
 
@@ -212,10 +230,22 @@ $(document).ready(function(){
         pageLength: 25
     });
 
+
+    // Show copy/export buttons if default is daily
+    if (currentType === 'daily') {
+        $('#copy-daily, #export-daily').removeClass('d-none');
+    }
+
     $('.sidebar a').click(function(e){
         e.preventDefault();
         updateFilters($(this).data('type'));
         table.ajax.reload();
+    });
+
+    // Logout button handling: submit hidden POST form to /logout
+    $('#logoutBtn').click(function(e){
+        e.preventDefault();
+        $('#logoutForm').submit();
     });
 
     $('#apply-filter').click(function(){ table.ajax.reload(); });
@@ -296,6 +326,95 @@ $(document).ready(function(){
                 showToast('Error', msg);
             }
         });
+    });
+
+
+    // Handle Copy Daily button (client-side, all filtered rows, robust)
+    $('#copy-daily').click(function() {
+        let lines = [];
+        let header = [];
+        $('#attendanceTable thead th').each(function(){
+            if ($(this).text().trim() !== 'Actions') header.push($(this).text().trim());
+        });
+        lines.push(header);
+        // Use DataTables API to get all filtered rows, not just visible page
+        let data = table.rows({ search: 'applied' }).data();
+        for (let i = 0; i < data.length; i++) {
+            let row = data[i];
+            lines.push([
+                row.user_id,
+                row.date,
+                row.first_punch,
+                row.last_punch,
+                row.work_time,
+                row.punch,
+                row.status
+            ]);
+        }
+        let text = lines.map(cols => cols.join('\t')).join('\n');
+        // Fallback for clipboard API
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Copied', 'All filtered data copied to clipboard');
+            }, function() {
+                fallbackCopy(text);
+                showToast('Copied', 'All filtered data copied to clipboard');
+            });
+        } else {
+            fallbackCopy(text);
+            showToast('Copied', 'All filtered data copied to clipboard');
+        }
+    });
+
+    // Handle Export Daily button (client-side, all filtered rows)
+    $('#export-daily').click(function() {
+        let header = [];
+        $('#attendanceTable thead th').each(function(){
+            if ($(this).text().trim() !== 'Actions') header.push($(this).text().trim());
+        });
+        let rows = [];
+        table.rows({ search: 'applied' }).every(function(){
+            let row = this.data();
+            rows.push([
+                row.user_id,
+                row.date,
+                row.first_punch,
+                row.last_punch,
+                row.work_time,
+                row.punch,
+                row.status
+            ]);
+        });
+        // Create a CSV string
+        let csv = '';
+        csv += header.join(',') + '\r\n';
+        rows.forEach(function(row){
+            csv += row.map(val => '"' + (val ? String(val).replace(/"/g, '""') : '') + '"').join(',') + '\r\n';
+        });
+        // Download as .csv (Excel will open it)
+        let blob = new Blob([csv], {type: 'text/csv'});
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_daily_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Exported', 'CSV file downloaded');
+    });
+
+    // Handle Export Daily button
+    $('#export-daily').click(function() {
+        const date = $('#filter-date').val();
     });
 });
 </script>
