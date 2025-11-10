@@ -32,8 +32,9 @@ def format_attendance(rows):
                 'date': date,
                 'in': timestamp.strftime('%H:%M:%S'),
                 'out': timestamp.strftime('%H:%M:%S'),
-                'status': row['status'],
-                'message': row['message'],
+                'status': row.get('status', ''),
+                'punch': row.get('punch', ''),
+                'message': row.get('message', ''),
                 'count': 1
             }
         else:
@@ -64,6 +65,7 @@ def format_attendance(rows):
             'in': r.get('in', ''),
             'out': out_val,
             'status': r.get('status', ''),
+            'punch': r.get('punch', ''),
             'message': r.get('message', '')
         })
 
@@ -85,7 +87,7 @@ def fetch_all_attendances():
         )
         with conn.cursor() as cursor:
             cursor.execute(
-                f"SELECT user_id, timestamp, status, message FROM {TABLE_NAME} "
+                f"SELECT user_id, timestamp, status, punch, message FROM {TABLE_NAME} "
                 "ORDER BY timestamp DESC"
             )
             rows = cursor.fetchall()
