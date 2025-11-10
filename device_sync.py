@@ -55,10 +55,6 @@ def test_device_connection(logger):
                 zk = ZK(DEVICE_IP, port=PORT, timeout=5, force_udp=force_udp, ommit_ping=ommit_ping)
                 conn = zk.connect()
                 if conn:
-                    # try:
-                    #     conn.disable_device()
-                    # except Exception:
-                    #     pass
                     attendance = conn.get_attendance()
                     count = len(attendance) if attendance else 0
                     logger.info(f"Connected ok (force_udp={force_udp}, ommit_ping={ommit_ping}), attendance_count={count}")
@@ -93,7 +89,6 @@ def connect_device_with_params(logger, params, max_retries=5, retry_delay=5):
         try:
             zk = ZK(DEVICE_IP, port=PORT, timeout=20, force_udp=params.get('force_udp', False), ommit_ping=params.get('ommit_ping', False))
             conn = zk.connect()
-            # conn.disable_device()
             logger.info("✅ Device connected")
             return conn
         except Exception as e:
