@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AttendanceController;
+
+Route::get('/', [DashboardController::class, 'index']);
+// Use AttendanceController::data for DataTables server-side processing (returns table-shaped data)
+Route::get('/api/attendance-summary', [AttendanceController::class, 'data']);
+Route::post('/api/attendance/update', [AttendanceController::class, 'update']);
+Route::post('/api/attendance/delete', [AttendanceController::class, 'delete']);
+// compatibility: frontend expects /api/check-latest — map it here
+Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
+// legacy/alternate route
+Route::get('/api/latest-attendance', [AttendanceController::class, 'latest']);
+Route::get('/api-test', function () {
+    try {
+        $response = Http::timeout(30)->withHeaders([
+            'Authorization' => 'Bearer test12345',
+            'Accept' => 'application/json'
+        ])->get('http://182.160.120.92:8080/');
+
+        if (!$response->successful()) {
+            return 'API Error: ' . $response->status();
+        }
+
+        $data = $response->json();
+
+        // Reorder each object
+        $orderedData = array_map(function($item) {
+            return [
+                'user_id' => $item['user_id'] ?? null,
+                'date'    => $item['date'] ?? null,
+                'in'      => $item['in'] ?? null,
+                'out'     => $item['out'] ?? null,
+                'status'  => $item['status'] ?? null,
+                'punch'    => $item['punch'] ?? null,
+                'message' => $item['message'] ?? null,
+            ];
+        }, $data);
+
+        return '<pre>' . json_encode($orderedData, JSON_PRETTY_PRINT) . '</pre>';
+
+    } catch (\Exception $e) {
+        return 'Connection Error: ' . $e->getMessage();
+    }
+});
