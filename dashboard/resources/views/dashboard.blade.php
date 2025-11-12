@@ -319,7 +319,7 @@ $(document).ready(function(){
             { data: 'status', render: function(data, type, row) {
                 // Map status codes to short labels for the dashboard
                 // 1 -> FP, 4 -> RF, otherwise show 'Other'
-                if (data == 1 || data === '1') return 'FINGERID';
+                if (data == 1 || data === '1') return 'FINID';
                 if (data == 4 || data === '4') return 'RFID';
                 return 'Other';
             } },
