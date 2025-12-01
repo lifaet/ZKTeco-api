@@ -162,13 +162,46 @@ let lastCheckId = 0; // last known entry ID
 // Be careful lowering too far: very frequent polling increases DB/load. Default 2000ms = 2s.
 const CHECK_LATEST_INTERVAL_MS = 6000;
 
+// client-side staff directory (not stored in DB)
+const staffDirectory = [
+    { id: 101, name: 'Major Md. Rafiqul Islam (Retd)' , title: 'Secretary General', dept: 'Secretary General' },
+    { id: 106, name: 'Ms. Sharif Nawrin Akter', title: 'AGM', dept: 'Service' },
+    { id: 126, name: 'Md. Abdullah Hil Baki', title: 'Sr. Manager', dept: 'Accounts & Admin' },
+    { id: 130, name: 'Abu Fattah Md. Issa', title: 'Sr. Manager', dept: 'Compliance' },
+    { id: 108, name: 'Mrs Jakia Begum', title: 'Deputy Manager', dept: 'Service' },
+    { id: 109, name: 'Mr. Bishmoy Saha', title: 'Deputy Manager', dept: 'Service' },
+    { id: 118, name: 'Md. Ibrahim Khalil', title: 'Deputy Manager', dept: 'Compliance' },
+    { id: 128, name: 'Md. Aminur Rahman', title: 'Assistant Manager', dept: 'Compliance' },
+    { id: 111, name: 'Mr. Md. Shahadat Hossain', title: 'Sr. Officer', dept: 'Service' },
+    { id: 113, name: 'Ms. Rashmin Rob Rini', title: 'Sr. Executive', dept: 'Service' },
+    { id: 117, name: 'Anika Afrin Swarna', title: 'Sr. Executive', dept: 'Research & Policy' },
+    { id: 121, name: 'Md. Nahidul Islam', title: 'Executive', dept: 'Accounts & Admin' },
+    { id: 125, name: 'Mr. Shoriful Islam', title: 'Executive', dept: 'Compliance' },
+    { id: 112, name: 'Mr. Md. Ishrafil Khan', title: 'Office Assistant', dept: 'Accounts & Admin' },
+    { id: 123, name: 'Md. Forhad Hossain', title: 'Office Assistant', dept: 'Accounts & Admin' }
+];
+
 function loadUsersIntoSelect() {
+    const sel = $('#filter-user-select');
+    sel.empty().append('<option value="">All Users</option>');
+
+    // populate with client-side staff directory first (so names show)
+    staffDirectory.forEach(s => {
+        sel.append(`<option value="${s.id}">${s.id} - ${s.name}</option>`);
+    });
+
+    // then try to fetch additional users from server and append any missing ones
     $.getJSON('/api/users').done(function(users){
-        const sel = $('#filter-user-select');
-        sel.empty().append('<option value="">All Users</option>');
-        users.forEach(u => sel.append(`<option value="${u.id}">${u.id}${u.name?(' - '+u.name):''}</option>`));
+        const existing = new Set(staffDirectory.map(s => String(s.id)));
+        users.forEach(u => {
+            const uid = String(u.id || u.user_id || u);
+            if (!existing.has(uid)) {
+                sel.append(`<option value="${uid}">${uid}</option>`);
+                existing.add(uid);
+            }
+        });
     }).fail(function(){
-        // endpoint not available -> keep text input as fallback
+        // endpoint not available -> we already populated from staffDirectory
     });
 }
 
@@ -310,7 +343,20 @@ $(document).ready(function(){
             }
         },
         columns: [
-            { data: 'user_id' },
+            { data: 'user_id', render: function(data, type, row) {
+                // try to find staff info from client-side directory
+                try {
+                    var sid = parseInt(data, 10);
+                    var s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                    if (s) {
+                        // show two-line format: ID Name then Designation, Department
+                        var dept = s.department || s.dept || '';
+                        var title = s.title || '';
+                        return `<div><strong>${s.name} (${data})</strong><br><small class="text-muted">${title}${dept?(', '+dept):''}</small></div>`;
+                    }
+                } catch (e) { }
+                return data;
+            } },
             { data: 'date' },
             { data: 'first_punch' },
             { data: 'last_punch', render: d => d ? d : '' },
@@ -465,13 +511,42 @@ $(document).ready(function(){
         $('#attendanceTable thead th').each(function(){
             if ($(this).text().trim() !== 'Actions') header.push($(this).text().trim());
         });
+        // ensure Name, Designation and Department columns present after User
+        if (header.indexOf('Name') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 1 : 1;
+            header.splice(insertAt, 0, 'Name');
+        }
+        if (header.indexOf('Designation') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 2 : 2;
+            header.splice(insertAt, 0, 'Designation');
+        }
+        if (header.indexOf('Department') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 3 : 3;
+            header.splice(insertAt, 0, 'Department');
+        }
         lines.push(header);
         // Use DataTables API to get all filtered rows, not just visible page
         let data = table.rows({ search: 'applied' }).data();
         for (let i = 0; i < data.length; i++) {
             let row = data[i];
+            // find staff info
+            let name = '';
+            let desig = '';
+            let dept = '';
+            try {
+                const sid = parseInt(row.user_id, 10);
+                const s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
+            } catch (e) {}
+
             lines.push([
                 row.user_id,
+                name,
+                desig,
+                dept,
                 row.date,
                 row.first_punch,
                 row.last_punch,
@@ -509,11 +584,40 @@ $(document).ready(function(){
         $('#attendanceTable thead th').each(function(){
             if ($(this).text().trim() !== 'Actions') header.push($(this).text().trim());
         });
+        // ensure Name, Designation and Department columns present after User
+        if (header.indexOf('Name') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 1 : 1;
+            header.splice(insertAt, 0, 'Name');
+        }
+        if (header.indexOf('Designation') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 2 : 2;
+            header.splice(insertAt, 0, 'Designation');
+        }
+        if (header.indexOf('Department') === -1) {
+            const userIdx = header.indexOf('User');
+            const insertAt = userIdx >= 0 ? userIdx + 3 : 3;
+            header.splice(insertAt, 0, 'Department');
+        }
+
         let rows = [];
         table.rows({ search: 'applied' }).every(function(){
             let row = this.data();
+            let name = '';
+            let desig = '';
+            let dept = '';
+            try {
+                const sid = parseInt(row.user_id, 10);
+                const s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
+            } catch (e) {}
+
             rows.push([
                 row.user_id,
+                name,
+                desig,
+                dept,
                 row.date,
                 row.first_punch,
                 row.last_punch,
