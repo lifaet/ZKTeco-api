@@ -330,6 +330,9 @@ footer .maintenance a:hover {
 ::-webkit-scrollbar-track { background: rgba(100, 116, 139, 0.08); }
 ::-webkit-scrollbar-thumb { background: rgba(2, 132, 199, 0.4); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(2, 132, 199, 0.6); }
+
+/* Ensure DataTables stretch to container width and recalc reliably */
+.dataTable, #attendanceTable, #staffTable { width: 100% !important; }
 </style>
 </head>
 <body>
@@ -346,6 +349,7 @@ footer .maintenance a:hover {
     <a href="#" data-type="daily" class="active"><i class="bi bi-calendar-day"></i> Daily</a>
     <a href="#" data-type="monthly"><i class="bi bi-calendar-month"></i> Monthly</a>
     <a href="#" data-type="user"><i class="bi bi-person-circle"></i> User-wise</a>
+    <a href="#" data-type="staff"><i class="bi bi-people"></i> Staff Directory</a>
     <hr>
     <a href="#" id="logoutBtn" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
 </div>
@@ -376,6 +380,7 @@ footer .maintenance a:hover {
         <button id="export-daily" class="btn btn-outline-success d-none">Export to CSV</button>
     </div>
 
+    <div id="attendanceSection">
     <table id="attendanceTable" class="table table-striped table-bordered">
         <thead>
             <tr>
@@ -390,6 +395,86 @@ footer .maintenance a:hover {
             </tr>
         </thead>
     </table>
+    </div>
+
+    <!-- Staff Directory Section (client-side) -->
+    <div id="staffSection" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Staff Directory</h5>
+            <button id="addStaffBtn" class="btn btn-primary btn-sm">Add Staff</button>
+        </div>
+
+        <table id="staffTable" class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Title</th>
+                    <th>Department</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <!-- Add/Edit Staff Modal -->
+        <div class="modal fade" id="staffModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add / Edit Staff</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="staffForm">
+                            <input type="hidden" id="staff-id">
+                            <div class="mb-3">
+                                <label class="form-label">ID</label>
+                                <input type="text" id="staff-input-id" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" id="staff-input-name" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Title</label>
+                                <input type="text" id="staff-input-title" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" id="staff-input-dept" class="form-control">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="saveStaffBtn" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Staff Modal -->
+        <div class="modal fade" id="staffDeleteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this staff member?
+                        <input type="hidden" id="staff-delete-id">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="confirmDeleteStaff" class="btn btn-danger">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     </div>
 </div>
 
@@ -466,6 +551,8 @@ footer .maintenance a:hover {
     </div>
 </div>
 
+<!-- staff UI moved to separate blade (/staff) -->
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
@@ -501,38 +588,21 @@ $('.sidebar a').click(function(e){
     }
 });
 
-// client-side staff directory (not stored in DB)
-const staffDirectory = [
-    { id: 101, name: 'Major Md. Rafiqul Islam (Retd)' , title: 'Secretary General', dept: 'Secretary General' },
-    { id: 106, name: 'Ms. Sharif Nawrin Akter', title: 'AGM', dept: 'Service' },
-    { id: 126, name: 'Md. Abdullah Hil Baki', title: 'Sr. Manager', dept: 'Accounts & Admin' },
-    { id: 130, name: 'Abu Fattah Md. Issa', title: 'Sr. Manager', dept: 'Compliance' },
-    { id: 108, name: 'Mrs Jakia Begum', title: 'Deputy Manager', dept: 'Service' },
-    { id: 109, name: 'Mr. Bishmoy Saha', title: 'Deputy Manager', dept: 'Service' },
-    { id: 118, name: 'Md. Ibrahim Khalil', title: 'Deputy Manager', dept: 'Compliance' },
-    { id: 128, name: 'Md. Aminur Rahman', title: 'Assistant Manager', dept: 'Compliance' },
-    { id: 111, name: 'Mr. Md. Shahadat Hossain', title: 'Sr. Officer', dept: 'Service' },
-    { id: 113, name: 'Ms. Rashmin Rob Rini', title: 'Sr. Executive', dept: 'Service' },
-    { id: 117, name: 'Anika Afrin Swarna', title: 'Sr. Executive', dept: 'Research & Policy' },
-    { id: 121, name: 'Md. Nahidul Islam', title: 'Executive', dept: 'Accounts & Admin' },
-    { id: 125, name: 'Mr. Shoriful Islam', title: 'Executive', dept: 'Compliance' },
-    { id: 112, name: 'Mr. Md. Ishrafil Khan', title: 'Office Assistant', dept: 'Accounts & Admin' },
-    { id: 123, name: 'Md. Forhad Hossain', title: 'Office Assistant', dept: 'Accounts & Admin' },
-    { id: 131, name: 'Md Khairujjaman Tushar', title: 'Sr. Executive', dept: 'Compliance' }
-];
+// Staff directory will be loaded from the server; start empty.
+window.staffDirectory = [];
 
 function loadUsersIntoSelect() {
     const sel = $('#filter-user-select');
     sel.empty().append('<option value="">All Users</option>');
 
     // populate with client-side staff directory first (so names show)
-    staffDirectory.forEach(s => {
+    (window.staffDirectory || []).forEach(s => {
         sel.append(`<option value="${s.id}">${s.id} - ${s.name}</option>`);
     });
 
     // then try to fetch additional users from server and append any missing ones
     $.getJSON('/api/users').done(function(users){
-        const existing = new Set(staffDirectory.map(s => String(s.id)));
+        const existing = new Set((window.staffDirectory || []).map(s => String(s.id)));
         users.forEach(u => {
             const uid = String(u.id || u.user_id || u);
             if (!existing.has(uid)) {
@@ -687,7 +757,7 @@ $(document).ready(function(){
                 // try to find staff info from client-side directory
                 try {
                     var sid = parseInt(data, 10);
-                    var s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                    var s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
                     if (s) {
                         // show two-line format: ID Name then Designation, Department
                         var dept = s.department || s.dept || '';
@@ -729,16 +799,54 @@ $(document).ready(function(){
     });
 
 
-    // initialize filter UI for current view
-    updateFilters(currentType);
-
-    $('.sidebar a').click(function(e){
-        e.preventDefault();
+    // initialize filter UI for current view via URL hash (deep-linking)
+    // Supported hashes: #daily (default), #monthly, #user, #staff
+    function applyView(view) {
+        const selected = view || 'daily';
+        currentType = selected;
         $('.sidebar a').removeClass('active');
-        $(this).addClass('active');
-        updateFilters($(this).data('type'));
-        table.ajax.reload();
+        // mark matching sidebar item active
+        $('.sidebar a').each(function(){ if ($(this).data('type') === selected) $(this).addClass('active'); });
+        // show/hide main sections
+        if (selected === 'staff') {
+            $('#attendanceSection').addClass('d-none');
+            $('#staffSection').removeClass('d-none');
+        } else {
+            $('#staffSection').addClass('d-none');
+            $('#attendanceSection').removeClass('d-none');
+        }
+        updateFilters(selected);
+        if (selected !== 'staff' && table && table.ajax && typeof table.ajax.reload === 'function') {
+            table.ajax.reload();
+            // Delay adjust so DOM reflow/animations complete before recalculating widths
+            setTimeout(function(){
+                try { if (table && table.columns && typeof table.columns.adjust === 'function') { table.columns.adjust().draw(false); } } catch(e) { console.debug('columns.adjust failed', e); }
+            }, 120);
+        }
+    }
+
+    // set view from current hash (strip leading '#')
+    function setViewFromHash() {
+        const hash = (window.location.hash || '').replace(/^#/, '');
+        applyView(hash || 'daily');
+    }
+
+    // clicking sidebar items updates the URL hash — hashchange handles the actual view change
+    $('.sidebar a').click(function(e){
+        const selected = $(this).data('type');
+        if (typeof selected !== 'undefined') {
+            e.preventDefault();
+            // update hash which creates a history entry and fires hashchange
+            window.location.hash = selected;
+        }
+        // if link has no data-type, allow normal navigation
     });
+
+    // respond to back/forward and manual hash changes
+    window.addEventListener('hashchange', setViewFromHash);
+
+    // initialize on load
+    setViewFromHash();
 
     // Prev/Next handlers
     $('.prev-day').click(function(){ navigateDay(-1); table.ajax.reload(); });
@@ -878,7 +986,7 @@ $(document).ready(function(){
             let dept = '';
             try {
                 const sid = parseInt(row.user_id, 10);
-                const s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                const s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
                 if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
             } catch (e) {}
 
@@ -949,7 +1057,7 @@ $(document).ready(function(){
             let dept = '';
             try {
                 const sid = parseInt(row.user_id, 10);
-                const s = staffDirectory.find(x => parseInt(x.id,10) === sid);
+                const s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
                 if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
             } catch (e) {}
 
@@ -989,6 +1097,175 @@ $(document).ready(function(){
     $('#export-daily').click(function() {
         const date = $('#filter-date').val();
     });
+
+    // --- Staff directory: prefer server-side storage via API, fallback to localStorage ---
+    function loadStaffFromServer() {
+        $.ajax({ url: '/api/staff', method: 'GET', dataType: 'json', cache: false })
+            .done(function(res){
+                if (Array.isArray(res)) {
+                    window.staffDirectory = res;
+                } else {
+                    window.staffDirectory = [];
+                }
+                renderStaffTable();
+            }).fail(function(){
+                window.staffDirectory = [];
+                renderStaffTable();
+                showToast('Error', 'Failed to load staff from server. Changes will not be saved.');
+            });
+    }
+
+    function saveStaffToLocalCache(){
+        // no-op: persistence is server-side only now
+    }
+
+    function renderStaffTable() {
+        const tbody = $('#staffTable tbody');
+        if (!tbody.length) return; // no staff table on this page
+        tbody.empty();
+        (window.staffDirectory || []).forEach(function(s){
+            const id = s.id;
+            const name = s.name || '';
+            const title = s.title || '';
+            const dept = s.dept || s.department || '';
+            const tr = $(
+                '<tr data-id="'+id+'">' +
+                '<td>' + id + '</td>' +
+                '<td>' + $('<div>').text(name).html() + '</td>' +
+                '<td>' + $('<div>').text(title).html() + '</td>' +
+                '<td>' + $('<div>').text(dept).html() + '</td>' +
+                '<td>' +
+                    '<button class="btn btn-sm btn-outline-primary staff-edit" data-id="'+id+'"><i class="bi bi-pencil"></i></button> ' +
+                    '<button class="btn btn-sm btn-outline-danger staff-delete" data-id="'+id+'"><i class="bi bi-trash"></i></button>' +
+                '</td>' +
+                '</tr>'
+            );
+            tbody.append(tr);
+        });
+
+        // initialize or re-draw DataTable for staff list
+        if ($.fn.DataTable.isDataTable('#staffTable')) {
+            try { $('#staffTable').DataTable().destroy(); } catch(e){}
+        }
+        const st = $('#staffTable').DataTable({
+            paging: true,
+            searching: true,
+            info: true,
+            lengthChange: false,
+            pageLength: 25,
+            order: [[1, 'asc']]
+        });
+        try { if (st && st.columns && typeof st.columns.adjust === 'function') st.columns.adjust().draw(false); } catch(e) { console.debug('staff columns.adjust failed', e); }
+        // also ensure attendance table recalculates after staff table operations
+        setTimeout(function(){
+            try { if (table && table.columns && typeof table.columns.adjust === 'function') table.columns.adjust().draw(false); } catch(e) { console.debug('attendance columns.adjust failed', e); }
+        }, 150);
+    }
+
+    // wire buttons
+    $('#addStaffBtn').click(function(){
+        $('#staff-id').val('');
+        $('#staff-input-id').val('');
+        $('#staff-input-name').val('');
+        $('#staff-input-title').val('');
+        $('#staff-input-dept').val('');
+        $('#staffModal').modal('show');
+    });
+
+    // Save (Add / Edit)
+    $('#saveStaffBtn').click(function(){
+        const originalId = String($('#staff-id').val() || '').trim();
+        const idVal = String($('#staff-input-id').val()).trim();
+        const name = String($('#staff-input-name').val() || '').trim();
+        const title = String($('#staff-input-title').val() || '').trim();
+        const dept = String($('#staff-input-dept').val() || '').trim();
+
+        if (!idVal || !name) {
+            showToast('Error', 'Please provide at least ID and Name');
+            return;
+        }
+
+        // ensure staffDirectory exists in-memory
+        window.staffDirectory = window.staffDirectory || [];
+
+        // edit mode
+        if (originalId) {
+            // call PUT /api/staff/{id}
+            $.ajax({
+                url: '/api/staff/' + encodeURIComponent(originalId),
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ name: name, title: title, department: dept })
+            }).done(function(updated){
+                // update local copy with server response and refresh UI
+                const idx = window.staffDirectory.findIndex(x => String(x.id) === String(originalId));
+                if (idx !== -1) window.staffDirectory[idx] = updated;
+                renderStaffTable();
+                $('#staffModal').modal('hide');
+                showToast('Saved', 'Staff member updated');
+                if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
+            }).fail(function(xhr){
+                const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update staff member on server';
+                showToast('Error', msg);
+            });
+            return;
+        }
+
+        // create mode
+        $.ajax({
+            url: '/api/staff',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept })
+        }).done(function(created){
+            window.staffDirectory = window.staffDirectory || [];
+            window.staffDirectory.push(created);
+            renderStaffTable();
+            $('#staffModal').modal('hide');
+            showToast('Saved', 'Staff member added');
+            if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
+        }).fail(function(xhr){
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to add staff member on server';
+            showToast('Error', msg);
+        });
+    });
+
+    // Edit / Delete handlers delegated
+    $('#staffTable tbody').on('click', '.staff-edit', function(){
+        const id = $(this).data('id');
+        const s = (window.staffDirectory || []).find(x => String(x.id) === String(id));
+        if (!s) return showToast('Error', 'Staff member not found');
+        $('#staff-id').val(s.id);
+        $('#staff-input-id').val(s.id);
+        $('#staff-input-name').val(s.name || '');
+        $('#staff-input-title').val(s.title || '');
+        $('#staff-input-dept').val(s.dept || s.department || '');
+        $('#staffModal').modal('show');
+    });
+
+    $('#staffTable tbody').on('click', '.staff-delete', function(){
+        const id = $(this).data('id');
+        $('#staff-delete-id').val(id);
+        $('#staffDeleteModal').modal('show');
+    });
+
+    $('#confirmDeleteStaff').click(function(){
+        const id = String($('#staff-delete-id').val());
+        $.ajax({ url: '/api/staff/' + encodeURIComponent(id), method: 'DELETE' }).done(function(){
+            window.staffDirectory = (window.staffDirectory || []).filter(x => String(x.id) !== id);
+            renderStaffTable();
+            $('#staffDeleteModal').modal('hide');
+            showToast('Deleted', 'Staff member removed');
+            if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
+        }).fail(function(xhr){
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete staff member on server';
+            showToast('Error', msg);
+        });
+    });
+
+    // Initialize staff list from server and render
+    loadStaffFromServer();
+
 });
 </script>
 </body>

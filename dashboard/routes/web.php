@@ -23,6 +23,12 @@ Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
 Route::get('/api/users', [AttendanceController::class, 'users']);
 // legacy/alternate route
 Route::get('/api/latest-attendance', [AttendanceController::class, 'latest']);
+// Staff CRUD API (used by dashboard frontend)
+Route::get('/api/staff', [\App\Http\Controllers\StaffController::class, 'index']);
+Route::post('/api/staff', [\App\Http\Controllers\StaffController::class, 'store']);
+Route::put('/api/staff/{id}', [\App\Http\Controllers\StaffController::class, 'update']);
+Route::delete('/api/staff/{id}', [\App\Http\Controllers\StaffController::class, 'destroy']);
+// Staff page removed: staff UI is embedded in dashboard
 Route::get('/api-test', function () {
     try {
         $response = Http::timeout(30)->withHeaders([
