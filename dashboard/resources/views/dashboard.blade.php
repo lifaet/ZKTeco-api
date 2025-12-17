@@ -417,62 +417,7 @@ footer .maintenance a:hover {
             <tbody></tbody>
         </table>
 
-        <!-- Add/Edit Staff Modal -->
-        <div class="modal fade" id="staffModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Add / Edit Staff</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="staffForm">
-                            <input type="hidden" id="staff-id">
-                            <div class="mb-3">
-                                <label class="form-label">ID</label>
-                                <input type="text" id="staff-input-id" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Name</label>
-                                <input type="text" id="staff-input-name" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Title</label>
-                                <input type="text" id="staff-input-title" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Department</label>
-                                <input type="text" id="staff-input-dept" class="form-control">
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" id="saveStaffBtn" class="btn btn-primary">Save</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Delete Staff Modal -->
-        <div class="modal fade" id="staffDeleteModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        Are you sure you want to delete this staff member?
-                        <input type="hidden" id="staff-delete-id">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" id="confirmDeleteStaff" class="btn btn-danger">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Staff modals moved to page-level for proper stacking (see bottom of file) -->
     </div>
 
     </div>
@@ -491,6 +436,63 @@ footer .maintenance a:hover {
 <form id="logoutForm" method="POST" action="/logout" style="display:none;">
     @csrf
 </form>
+
+<!-- Add/Edit Staff Modal -->
+<div class="modal fade" id="staffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add / Edit Staff</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="staffForm">
+                    <input type="hidden" id="staff-id">
+                    <div class="mb-3">
+                        <label class="form-label">ID</label>
+                        <input type="text" id="staff-input-id" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="staff-input-name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="staff-input-title" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" id="staff-input-dept" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveStaffBtn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Staff Modal -->
+<div class="modal fade" id="staffDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this staff member?
+                <input type="hidden" id="staff-delete-id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmDeleteStaff" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
@@ -1153,7 +1155,7 @@ $(document).ready(function(){
             info: true,
             lengthChange: false,
             pageLength: 25,
-            order: [[1, 'asc']]
+            order: [[0, 'asc']]
         });
         try { if (st && st.columns && typeof st.columns.adjust === 'function') st.columns.adjust().draw(false); } catch(e) { console.debug('staff columns.adjust failed', e); }
         // also ensure attendance table recalculates after staff table operations
