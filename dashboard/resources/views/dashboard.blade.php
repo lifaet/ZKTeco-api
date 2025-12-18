@@ -1072,7 +1072,7 @@ $(document).ready(function(){
                 row.first_punch,
                 row.last_punch,
                 row.work_time,
-                row.punch,
+                // row.punch,
                 row.status
             ]);
         });
