@@ -389,7 +389,7 @@ footer .maintenance a:hover {
                 <th>First Punch</th>
                 <th>Last Punch</th>
                 <th>Work Time</th>
-                <th>Source</th>
+                <th>Type</th>
                 <th>VerifyID</th>
                 <th>Actions</th>
             </tr>
@@ -919,11 +919,25 @@ $(document).ready(function(){
             method: 'POST',
             data: data,
             success: function(response) {
+                console.debug('saveEdit: ajax success', response);
                 $('#editModal').modal('hide');
                 showToast('Success', 'Attendance record updated successfully');
-                // reload the table silently, keep current paging
-                try { if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false); }
-                catch(e) { console.debug('table.reload failed', e); }
+                // Delay slightly so modal hide animation completes, then reload table robustly
+                setTimeout(function(){
+                    try {
+                        if (table && table.ajax && typeof table.ajax.reload === 'function') {
+                            console.debug('saveEdit: calling table.ajax.reload via instance');
+                            table.ajax.reload(null, false);
+                            try { if (table.columns && typeof table.columns.adjust === 'function') table.columns.adjust().draw(false); } catch(e){}
+                            return;
+                        }
+                    } catch(e) { console.debug('saveEdit: table.reload failed', e); }
+                    try {
+                        console.debug('saveEdit: calling fallback DataTable selector reload');
+                        $('#attendanceTable').DataTable().ajax.reload(null, false);
+                        $('#attendanceTable').DataTable().columns.adjust().draw(false);
+                    } catch(e) { console.debug('saveEdit: fallback reload failed', e); }
+                }, 150);
             },
             error: function(xhr) {
                 const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update attendance record';
@@ -952,10 +966,24 @@ $(document).ready(function(){
             method: 'POST',
             data: data,
             success: function(response) {
+                console.debug('confirmDelete: ajax success', response);
                 $('#deleteModal').modal('hide');
                 showToast('Success', 'Attendance record deleted successfully');
-                try { if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false); }
-                catch(e) { console.debug('table.reload failed', e); }
+                setTimeout(function(){
+                    try {
+                        if (table && table.ajax && typeof table.ajax.reload === 'function') {
+                            console.debug('confirmDelete: calling table.ajax.reload via instance');
+                            table.ajax.reload(null, false);
+                            try { if (table.columns && typeof table.columns.adjust === 'function') table.columns.adjust().draw(false); } catch(e){}
+                            return;
+                        }
+                    } catch(e) { console.debug('confirmDelete: table.reload failed', e); }
+                    try {
+                        console.debug('confirmDelete: calling fallback DataTable selector reload');
+                        $('#attendanceTable').DataTable().ajax.reload(null, false);
+                        $('#attendanceTable').DataTable().columns.adjust().draw(false);
+                    } catch(e) { console.debug('confirmDelete: fallback reload failed', e); }
+                }, 150);
             },
             error: function(xhr) {
                 const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete attendance record';
@@ -976,6 +1004,23 @@ $(document).ready(function(){
             e.preventDefault();
             $('#saveEdit').click();
         }
+    });
+
+    // Ensure we reload the table if modal hide completes and previous save/delete flagged a refresh
+    var __needsAttendanceReload = false;
+    $('#saveEdit, #confirmDelete').on('click', function(){ __needsAttendanceReload = true; });
+    $('#editModal, #deleteModal').on('hidden.bs.modal', function(){
+        if (!__needsAttendanceReload) return;
+        __needsAttendanceReload = false;
+        try {
+            if (table && table.ajax && typeof table.ajax.reload === 'function') {
+                console.debug('hidden.bs.modal: reloading table');
+                table.ajax.reload(null, false);
+                try { if (table.columns && typeof table.columns.adjust === 'function') table.columns.adjust().draw(false); } catch(e){}
+                return;
+            }
+        } catch(e){ console.debug('hidden.bs.modal: reload via instance failed', e); }
+        try { $('#attendanceTable').DataTable().ajax.reload(null, false); $('#attendanceTable').DataTable().columns.adjust().draw(false); } catch(e){ console.debug('hidden.bs.modal: fallback reload failed', e); }
     });
 
     // Similarly, bind Enter in delete modal to confirm delete to avoid accidental page submit/reload.
