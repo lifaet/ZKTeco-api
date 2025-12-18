@@ -389,7 +389,7 @@ footer .maintenance a:hover {
                 <th>First Punch</th>
                 <th>Last Punch</th>
                 <th>Work Time</th>
-                <!-- <th>Punch Type</th> -->
+                <th>Source</th>
                 <th>VerifyID</th>
                 <th>Actions</th>
             </tr>
@@ -514,10 +514,7 @@ footer .maintenance a:hover {
                         <label class="form-label">Last Punch</label>
                         <input type="time" class="form-control" id="edit-last-punch" step="1">
                     </div>
-                    <!-- <div class="mb-3">
-                        <label class="form-label">Punch</label>
-                        <input type="text" class="form-control" id="edit-punch">
-                    </div> -->
+                    <input type="hidden" id="edit-original-punch">
                     <div class="mb-3">
                         <label class="form-label">VerifyID (1 For FINGERPRINT, 4 For RFID)</label>
                         <input type="text" class="form-control" id="edit-status">
@@ -773,7 +770,12 @@ $(document).ready(function(){
             { data: 'first_punch' },
             { data: 'last_punch', render: d => d ? d : '' },
             { data: 'work_time', render: d => d ? d : '' },
-            // { data: 'punch', render: d => d ? d : '' },
+            { data: 'punch', render: function(d, type, row) {
+                // treat numeric/string 255 as automatic machine-sourced
+                if (d == 255 || d === '255') return '<span class="badge bg-info text-white">Auto</span>';
+                if (d) return '<span class="badge bg-warning text-dark">Manual</span>';
+                return '';
+            } },
             { data: 'status', render: function(data, type, row) {
                 // Map status codes to short labels for the dashboard
                 // 1 -> FP, 4 -> RF, otherwise show 'Other'
@@ -890,19 +892,25 @@ $(document).ready(function(){
         $('#edit-date').val(row.date);
         $('#edit-first-punch').val(row.first_punch);
         $('#edit-last-punch').val(row.last_punch);
-        $('#edit-punch').val(row.punch);
+        // store original punch value (machine/preset marker like 255)
+        $('#edit-original-punch').val(row.punch);
         $('#edit-status').val(row.status);
         $('#editModal').modal('show');
     });
 
     // Handle Save Edit
     $('#saveEdit').click(function() {
+        // Determine punch to send: if the original punch was 255 (machine auto),
+        // mark it as manual when a human edits.
+        const originalPunch = String($('#edit-original-punch').val() || '');
+        const punchToSend = (originalPunch === '255' || originalPunch == 255) ? 'manual' : originalPunch;
+
         const data = {
             user_id: $('#edit-user-id').val(),
             date: $('#edit-date').val(),
             first_punch: $('#edit-first-punch').val(),
             last_punch: $('#edit-last-punch').val(),
-            punch: $('#edit-punch').val(),
+            punch: punchToSend,
             status: $('#edit-status').val()
         };
 
@@ -913,7 +921,9 @@ $(document).ready(function(){
             success: function(response) {
                 $('#editModal').modal('hide');
                 showToast('Success', 'Attendance record updated successfully');
-                table.ajax.reload();
+                // reload the table silently, keep current paging
+                try { if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false); }
+                catch(e) { console.debug('table.reload failed', e); }
             },
             error: function(xhr) {
                 const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update attendance record';
@@ -944,13 +954,36 @@ $(document).ready(function(){
             success: function(response) {
                 $('#deleteModal').modal('hide');
                 showToast('Success', 'Attendance record deleted successfully');
-                table.ajax.reload();
+                try { if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false); }
+                catch(e) { console.debug('table.reload failed', e); }
             },
             error: function(xhr) {
                 const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete attendance record';
                 showToast('Error', msg);
             }
         });
+    });
+
+    // Prevent the Edit form from submitting and causing a page reload on Enter.
+    $('#editForm').on('submit', function(e){
+        e.preventDefault();
+        $('#saveEdit').click();
+    });
+
+    // If user presses Enter while the edit modal is focused, trigger save instead of submitting the page.
+    $('#editModal').on('keydown', function(e){
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#saveEdit').click();
+        }
+    });
+
+    // Similarly, bind Enter in delete modal to confirm delete to avoid accidental page submit/reload.
+    $('#deleteModal').on('keydown', function(e){
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#confirmDelete').click();
+        }
     });
 
 
