@@ -563,7 +563,7 @@ let currentType = 'daily';
 let lastCheckId = 0; // last known entry ID
 // Polling interval (ms) for /api/check-latest. Lower values = more frequent checks.
 // Be careful lowering too far: very frequent polling increases DB/load. Default 2000ms = 2s.
-const CHECK_LATEST_INTERVAL_MS = 6000;
+const CHECK_LATEST_INTERVAL_MS = 4000;
 
 // Update current date and time in header
 function updateDateTime() {
