@@ -666,7 +666,7 @@ function showToast(title, message){
                 $('body').append('<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>');
         }
         $('.toast-container').append(toastHTML);
-    const toastEl = new bootstrap.Toast(document.getElementById(toastId), { delay: 5000 });
+    const toastEl = new bootstrap.Toast(document.getElementById(toastId), { delay: 2000 });
     toastEl.show();
 }
 
