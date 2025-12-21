@@ -661,7 +661,11 @@ function showToast(title, message){
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
       </div>`;
-    $('.toast-container').append(toastHTML);
+        // ensure a toast container exists (some other partials create it, but not always)
+        if ($('.toast-container').length === 0) {
+                $('body').append('<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>');
+        }
+        $('.toast-container').append(toastHTML);
     const toastEl = new bootstrap.Toast(document.getElementById(toastId), { delay: 5000 });
     toastEl.show();
 }
