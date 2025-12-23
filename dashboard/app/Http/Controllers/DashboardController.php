@@ -7,8 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Facades\Redirect;
 
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+// PhpSpreadsheet imports removed — exports run client-side; keep controller focused on DB/views
 
 
 class DashboardController extends Controller
