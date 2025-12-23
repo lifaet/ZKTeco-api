@@ -185,6 +185,49 @@ class AttendanceController extends Controller
         return response()->json(['message' => 'Records deleted successfully']);
     }
 
+    /**
+     * Add a manual attendance record (first punch required, optional last punch).
+     */
+    public function add(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $date = $request->input('date');
+        $firstPunch = $request->input('first_punch');
+        $lastPunch = $request->input('last_punch');
+        $status = $request->input('status', null);
+
+        if (! $userId || ! $date || ! $firstPunch) {
+            return response()->json(['message' => 'user_id, date and first_punch are required'], 400);
+        }
+
+        try {
+            $firstTs = Carbon::parse($date . ' ' . $firstPunch)->format('Y-m-d H:i:s');
+
+            Attendance::create([
+                'user_id' => $userId,
+                'timestamp' => $firstTs,
+                'status' => $status,
+                'punch' => 'manual',
+                'message' => 'Created manually via dashboard'
+            ]);
+
+            if ($lastPunch && $lastPunch !== $firstPunch) {
+                $lastTs = Carbon::parse($date . ' ' . $lastPunch)->format('Y-m-d H:i:s');
+                Attendance::create([
+                    'user_id' => $userId,
+                    'timestamp' => $lastTs,
+                    'status' => $status,
+                    'punch' => 'manual',
+                    'message' => 'Created manually via dashboard'
+                ]);
+            }
+
+            return response()->json(['message' => 'Attendance created successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to create attendance: ' . $e->getMessage()], 500);
+        }
+    }
+
     // Return distinct users for frontend dropdowns
     public function users()
     {

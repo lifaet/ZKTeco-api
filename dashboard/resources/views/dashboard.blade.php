@@ -376,6 +376,7 @@ footer .maintenance a:hover {
         </div>
 
         <button id="apply-filter" class="btn btn-primary">Apply</button>
+        <button id="addAttendanceBtn" class="btn btn-warning">Add Attendance</button>
         <button id="copy-daily" class="btn btn-outline-secondary d-none">Copy</button>
         <button id="export-daily" class="btn btn-outline-success d-none">Export to CSV</button>
     </div>
@@ -551,6 +552,48 @@ footer .maintenance a:hover {
 </div>
 
 <!-- staff UI moved to separate blade (/staff) -->
+
+            <!-- Add Attendance Modal -->
+            <div class="modal fade" id="addAttendanceModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Attendance (Manual)</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addAttendanceForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Staff</label>
+                                    <select id="add-user-select" class="form-select">
+                                        <option value="">Select staff</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Date</label>
+                                    <input type="date" id="add-date" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">First Punch</label>
+                                    <input type="time" step="1" id="add-first-punch" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Last Punch (optional)</label>
+                                    <input type="time" step="1" id="add-last-punch" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">VerifyID (optional)</label>
+                                    <input type="text" id="add-status" class="form-control" placeholder="1 for fingerprint, 4 for RFID">
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" id="saveAddAttendance" class="btn btn-primary">Add Attendance</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -1349,6 +1392,62 @@ $(document).ready(function(){
 
     // Initialize staff list from server and render
     loadStaffFromServer();
+
+    // Add Attendance button handler
+    $('#addAttendanceBtn').click(function(){
+        const sel = $('#add-user-select');
+        sel.empty().append('<option value="">Select staff</option>');
+        (window.staffDirectory || []).forEach(s => {
+            sel.append(`<option value="${s.id}">${s.id} - ${s.name || ''}</option>`);
+        });
+        // try to fetch any users not present in staffDirectory
+        $.getJSON('/api/users').done(function(users){
+            const existing = new Set((window.staffDirectory || []).map(s => String(s.id)));
+            users.forEach(u => {
+                const uid = String(u.id || u.user_id || u);
+                if (!existing.has(uid)) sel.append(`<option value="${uid}">${uid}</option>`);
+            });
+        }).fail(function(){});
+
+        $('#add-date').val($('#filter-date').val() || new Date().toISOString().slice(0,10));
+        $('#add-first-punch').val('');
+        $('#add-last-punch').val('');
+        $('#add-status').val('');
+        $('#addAttendanceModal').modal('show');
+    });
+
+    // Save new attendance
+    $('#saveAddAttendance').click(function(){
+        const user_id = $('#add-user-select').val();
+        const date = $('#add-date').val();
+        const first_punch = $('#add-first-punch').val();
+        const last_punch = $('#add-last-punch').val();
+        const status = $('#add-status').val();
+
+        if (!user_id || !date || !first_punch) {
+            showToast('Error', 'Please select staff and provide date and first punch');
+            return;
+        }
+
+        $.ajax({
+            url: '/api/attendance/add',
+            method: 'POST',
+            data: {
+                user_id: user_id,
+                date: date,
+                first_punch: first_punch,
+                last_punch: last_punch,
+                status: status
+            }
+        }).done(function(res){
+            $('#addAttendanceModal').modal('hide');
+            showToast('Success', 'Attendance added successfully');
+            setTimeout(function(){ try { if (table && table.ajax && typeof table.ajax.reload === 'function') { table.ajax.reload(null, false); table.columns.adjust().draw(false); return; } } catch(e){} try { $('#attendanceTable').DataTable().ajax.reload(null, false); $('#attendanceTable').DataTable().columns.adjust().draw(false); } catch(e){} }, 150);
+        }).fail(function(xhr){
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to add attendance';
+            showToast('Error', msg);
+        });
+    });
 
 });
 </script>

@@ -17,6 +17,8 @@ Route::get('/', [DashboardController::class, 'index']);
 Route::get('/api/attendance-summary', [AttendanceController::class, 'data']);
 Route::post('/api/attendance/update', [AttendanceController::class, 'update']);
 Route::post('/api/attendance/delete', [AttendanceController::class, 'delete']);
+// Add manual attendance entry from dashboard UI
+Route::post('/api/attendance/add', [AttendanceController::class, 'add']);
 // compatibility: frontend expects /api/check-latest — map it here
 Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
 // users endpoint for populating user dropdowns
