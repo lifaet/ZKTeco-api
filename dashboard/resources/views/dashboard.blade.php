@@ -340,7 +340,11 @@ footer .maintenance a:hover {
 <!-- Header Navigation -->
 <nav class="navbar-header">
     <button class="sidebar-toggle" id="sidebarToggle" title="Menu"><i class="bi bi-list"></i></button>
-    <div class="logo"><i class="bi bi-clock-history"></i>Attendance Dashboard</div>
+    <a href="/" style="font: inherit; color: inherit; text-decoration: none;">
+    <div class="logo">
+        <i class="bi bi-clock-history"></i>Attendance Dashboard
+    </div>
+    </a>
     <div class="date-time" id="currentDateTime"></div>
 </nav>
 
