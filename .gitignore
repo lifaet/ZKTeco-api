@@ -2,4 +2,3 @@ logs/
 __pycache__/
 restore_from_log.py
 config.py
-/backup-restore/
