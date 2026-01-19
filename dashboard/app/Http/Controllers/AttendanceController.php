@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Attendance;
+use App\Models\Staff;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -24,6 +25,86 @@ class AttendanceController extends Controller
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 10);
 
+        if ($type === 'daily' && $date) {
+            // For daily reports, show all staff with their attendance status
+            $allStaff = Staff::all();
+            $data = [];
+
+            foreach ($allStaff as $staff) {
+                // Get attendance records for this staff on the date
+                $attendanceRecords = Attendance::where('user_id', $staff->id)
+                    ->whereDate('timestamp', $date)
+                    ->orderBy('timestamp')
+                    ->get();
+
+                if ($attendanceRecords->isNotEmpty()) {
+                    // Has attendance - calculate times
+                    $first = $attendanceRecords->first();
+                    $last = $attendanceRecords->last();
+
+                    $inTime = Carbon::parse($first->timestamp)->format('H:i:s');
+                    $outTime = ($first->id !== $last->id) ? Carbon::parse($last->timestamp)->format('H:i:s') : '';
+                    $workTime = '';
+
+                    if ($outTime) {
+                        $diff = Carbon::parse($last->timestamp)->diff(Carbon::parse($first->timestamp));
+                        $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
+                    }
+
+                    $data[] = [
+                        'user_id' => $staff->id,
+                        'date' => $date,
+                        'first_punch' => $inTime,
+                        'last_punch' => $outTime,
+                        'work_time' => $workTime,
+                        'punch' => $last->punch ?? '',
+                        'status' => $last->status ?? '',
+                        'is_absent' => false,
+                    ];
+                } else {
+                    // No attendance - mark as absent
+                    $data[] = [
+                        'user_id' => $staff->id,
+                        'date' => $date,
+                        'first_punch' => 'Absent',
+                        'last_punch' => '',
+                        'work_time' => '',
+                        'punch' => '',
+                        'status' => '',
+                        'is_absent' => true,
+                    ];
+                }
+            }
+
+            // Apply search filter if provided
+            if ($search = $request->input('search.value')) {
+                $data = array_filter($data, function($row) use ($search) {
+                    return stripos($row['user_id'], $search) !== false ||
+                           stripos($row['first_punch'], $search) !== false ||
+                           stripos($row['last_punch'], $search) !== false;
+                });
+            }
+
+            $recordsTotal = count($data);
+            $recordsFiltered = $recordsTotal;
+
+            // Sort by user_id
+            usort($data, function($a, $b) {
+                return $a['user_id'] <=> $b['user_id'];
+            });
+
+            // Paginate
+            $paged = array_slice($data, $start, $length);
+
+            return response()->json([
+                'draw' => intval($request->draw),
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $paged,
+            ]);
+        }
+
+        // For other types (monthly, user), use the original logic
         // Helper to group a collection of Attendance models by user+date
         $groupCollection = function($collection) {
             return $collection->groupBy(function($item) {
@@ -49,6 +130,7 @@ class AttendanceController extends Controller
                     'work_time'   => $workTime,
                     'punch'       => $last->punch ?? '',
                     'status'      => $last->status ?? '',
+                    'is_absent'   => false,
                 ];
             })->values();
         };
@@ -61,9 +143,6 @@ class AttendanceController extends Controller
         // Build filtered query
         $filteredQuery = Attendance::query();
 
-        if ($type === 'daily' && $date) {
-            $filteredQuery->whereDate('timestamp', $date);
-        }
         if ($type === 'monthly' && $month) {
             // month expected in YYYY-MM
             $filteredQuery->whereRaw("DATE_FORMAT(timestamp, '%Y-%m') = ?", [$month]);
