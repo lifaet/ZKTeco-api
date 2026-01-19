@@ -37,7 +37,7 @@ class StaffSeeder extends Seeder
         ];
 
         foreach ($rows as $r) {
-            DB::table('staff')->updateOrInsert(['id' => $r['id']], array_merge($r, ['created_at' => $now, 'updated_at' => $now]));
+            DB::table('staff')->updateOrInsert(['id' => $r['id']], array_merge($r, ['active' => true, 'created_at' => $now, 'updated_at' => $now]));
         }
     }
 }

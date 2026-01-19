@@ -27,7 +27,13 @@ class StaffController extends Controller
             'name' => 'required|string|max:255',
             'title' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
+            'active' => 'sometimes|boolean',
         ]);
+
+        // Ensure active is boolean
+        if (isset($data['active'])) {
+            $data['active'] = (bool) $data['active'];
+        }
 
         $staff = Staff::updateOrCreate(['id' => $data['id']], $data);
         return response()->json($staff, 201);
@@ -37,10 +43,16 @@ class StaffController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
             'title' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
+            'active' => 'sometimes|boolean',
         ]);
+
+        // Ensure active is boolean
+        if (isset($data['active'])) {
+            $data['active'] = (bool) $data['active'];
+        }
 
         $staff = Staff::findOrFail($id);
         $staff->update($data);

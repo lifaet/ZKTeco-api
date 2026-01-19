@@ -12,6 +12,10 @@ class Staff extends Model
     protected $keyType = 'int';
 
     protected $fillable = [
-        'id', 'name', 'title', 'department'
+        'id', 'name', 'title', 'department', 'active'
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
     ];
 }

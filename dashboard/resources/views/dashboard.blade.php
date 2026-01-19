@@ -422,6 +422,7 @@ footer .maintenance a:hover {
                     <th>Name</th>
                     <th>Title</th>
                     <th>Department</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -474,6 +475,10 @@ footer .maintenance a:hover {
                     <div class="mb-3">
                         <label class="form-label">Department</label>
                         <input type="text" id="staff-input-dept" class="form-control">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" id="staff-input-active" class="form-check-input" checked>
+                        <label class="form-check-label" for="staff-input-active">Active</label>
                     </div>
                 </form>
             </div>
@@ -1273,12 +1278,17 @@ $(document).ready(function(){
             const name = s.name || '';
             const title = s.title || '';
             const dept = s.dept || s.department || '';
+            const active = s.active !== false; // default to true if not set
+            const statusBadge = active 
+                ? '<span class="badge bg-success">Active</span>' 
+                : '<span class="badge bg-secondary">Inactive</span>';
             const tr = $(
                 '<tr data-id="'+id+'">' +
                 '<td>' + id + '</td>' +
                 '<td>' + $('<div>').text(name).html() + '</td>' +
                 '<td>' + $('<div>').text(title).html() + '</td>' +
                 '<td>' + $('<div>').text(dept).html() + '</td>' +
+                '<td>' + statusBadge + '</td>' +
                 '<td>' +
                     '<button class="btn btn-sm btn-outline-primary staff-edit" data-id="'+id+'"><i class="bi bi-pencil"></i></button> ' +
                     '<button class="btn btn-sm btn-outline-danger staff-delete" data-id="'+id+'"><i class="bi bi-trash"></i></button>' +
@@ -1314,6 +1324,7 @@ $(document).ready(function(){
         $('#staff-input-name').val('');
         $('#staff-input-title').val('');
         $('#staff-input-dept').val('');
+        $('#staff-input-active').prop('checked', true); // default to active
         $('#staffModal').modal('show');
     });
 
@@ -1324,6 +1335,7 @@ $(document).ready(function(){
         const name = String($('#staff-input-name').val() || '').trim();
         const title = String($('#staff-input-title').val() || '').trim();
         const dept = String($('#staff-input-dept').val() || '').trim();
+        const active = $('#staff-input-active').is(':checked');
 
         if (!idVal || !name) {
             showToast('Error', 'Please provide at least ID and Name');
@@ -1340,7 +1352,7 @@ $(document).ready(function(){
                 url: '/api/staff/' + encodeURIComponent(originalId),
                 method: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify({ name: name, title: title, department: dept })
+                data: JSON.stringify({ name: name, title: title, department: dept, active: active })
             }).done(function(updated){
                 // update local copy with server response and refresh UI
                 const idx = window.staffDirectory.findIndex(x => String(x.id) === String(originalId));
@@ -1361,7 +1373,7 @@ $(document).ready(function(){
             url: '/api/staff',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept })
+            data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept, active: active })
         }).done(function(created){
             window.staffDirectory = window.staffDirectory || [];
             window.staffDirectory.push(created);
@@ -1385,6 +1397,7 @@ $(document).ready(function(){
         $('#staff-input-name').val(s.name || '');
         $('#staff-input-title').val(s.title || '');
         $('#staff-input-dept').val(s.dept || s.department || '');
+        $('#staff-input-active').prop('checked', s.active !== false);
         $('#staffModal').modal('show');
     });
 
@@ -1392,6 +1405,30 @@ $(document).ready(function(){
         const id = $(this).data('id');
         $('#staff-delete-id').val(id);
         $('#staffDeleteModal').modal('show');
+    });
+
+    $('#staffTable tbody').on('click', '.staff-toggle', function(){
+        const id = $(this).data('id');
+        const s = (window.staffDirectory || []).find(x => String(x.id) === String(id));
+        if (!s) return showToast('Error', 'Staff member not found');
+        
+        const newActive = !s.active; // toggle active status
+        $.ajax({
+            url: '/api/staff/' + encodeURIComponent(id),
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({ active: newActive })
+        }).done(function(response){
+            // Update local staff directory
+            s.active = newActive;
+            renderStaffTable();
+            showToast('Success', 'Staff member ' + (newActive ? 'activated' : 'deactivated'));
+            // Reload attendance table to reflect changes
+            if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
+        }).fail(function(xhr){
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update staff status';
+            showToast('Error', msg);
+        });
     });
 
     $('#confirmDeleteStaff').click(function(){

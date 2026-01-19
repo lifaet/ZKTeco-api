@@ -26,8 +26,8 @@ class AttendanceController extends Controller
         $length = (int) $request->input('length', 10);
 
         if ($type === 'daily' && $date) {
-            // For daily reports, show all staff with their attendance status
-            $allStaff = Staff::all();
+            // For daily reports, show all active staff with their attendance status
+            $allStaff = Staff::where('active', true)->get();
             $data = [];
 
             foreach ($allStaff as $staff) {
