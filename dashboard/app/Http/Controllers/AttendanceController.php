@@ -67,6 +67,25 @@ class AttendanceController extends Controller
                 ];
             }
 
+            // Now, add absent entries for active staff with no attendance
+            $activeStaff = Staff::where('active', true)->get();
+            $attendedUserIds = $groupedRecords->keys()->toArray();
+
+            foreach ($activeStaff as $staff) {
+                if (!in_array($staff->id, $attendedUserIds)) {
+                    $data[] = [
+                        'user_id' => $staff->id,
+                        'date' => $date,
+                        'first_punch' => 'Absent',
+                        'last_punch' => '',
+                        'work_time' => '',
+                        'punch' => '',
+                        'status' => '',
+                        'is_absent' => true,
+                    ];
+                }
+            }
+
             // Apply search filter if provided
             if ($search = $request->input('search.value')) {
                 $data = array_filter($data, function($row) use ($search) {
