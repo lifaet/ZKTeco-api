@@ -26,54 +26,45 @@ class AttendanceController extends Controller
         $length = (int) $request->input('length', 10);
 
         if ($type === 'daily' && $date) {
-            // For daily reports, show all active staff with their attendance status
-            $allStaff = Staff::where('active', true)->get();
+            // Get all attendance records for the date
+            $attendanceRecords = Attendance::whereDate('timestamp', $date)
+                ->orderBy('timestamp')
+                ->get();
+
+            // Group by user_id
+            $groupedRecords = $attendanceRecords->groupBy('user_id');
             $data = [];
 
-            foreach ($allStaff as $staff) {
-                // Get attendance records for this staff on the date
-                $attendanceRecords = Attendance::where('user_id', $staff->id)
-                    ->whereDate('timestamp', $date)
-                    ->orderBy('timestamp')
-                    ->get();
-
-                if ($attendanceRecords->isNotEmpty()) {
-                    // Has attendance - calculate times
-                    $first = $attendanceRecords->first();
-                    $last = $attendanceRecords->last();
-
-                    $inTime = Carbon::parse($first->timestamp)->format('H:i:s');
-                    $outTime = ($first->id !== $last->id) ? Carbon::parse($last->timestamp)->format('H:i:s') : '';
-                    $workTime = '';
-
-                    if ($outTime) {
-                        $diff = Carbon::parse($last->timestamp)->diff(Carbon::parse($first->timestamp));
-                        $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
-                    }
-
-                    $data[] = [
-                        'user_id' => $staff->id,
-                        'date' => $date,
-                        'first_punch' => $inTime,
-                        'last_punch' => $outTime,
-                        'work_time' => $workTime,
-                        'punch' => $last->punch ?? '',
-                        'status' => $last->status ?? '',
-                        'is_absent' => false,
-                    ];
-                } else {
-                    // No attendance - mark as absent
-                    $data[] = [
-                        'user_id' => $staff->id,
-                        'date' => $date,
-                        'first_punch' => 'Absent',
-                        'last_punch' => '',
-                        'work_time' => '',
-                        'punch' => '',
-                        'status' => '',
-                        'is_absent' => true,
-                    ];
+            foreach ($groupedRecords as $userId => $records) {
+                // Check staff status
+                $staff = Staff::where('id', $userId)->first();
+                if ($staff && !$staff->active) {
+                    continue; // Skip inactive staff
                 }
+
+                // Calculate times
+                $first = $records->first();
+                $last = $records->last();
+
+                $inTime = Carbon::parse($first->timestamp)->format('H:i:s');
+                $outTime = ($first->id !== $last->id) ? Carbon::parse($last->timestamp)->format('H:i:s') : '';
+                $workTime = '';
+
+                if ($outTime) {
+                    $diff = Carbon::parse($last->timestamp)->diff(Carbon::parse($first->timestamp));
+                    $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
+                }
+
+                $data[] = [
+                    'user_id' => $userId,
+                    'date' => $date,
+                    'first_punch' => $inTime,
+                    'last_punch' => $outTime,
+                    'work_time' => $workTime,
+                    'punch' => $last->punch ?? '',
+                    'status' => $last->status ?? '',
+                    'is_absent' => false,
+                ];
             }
 
             // Apply search filter if provided
