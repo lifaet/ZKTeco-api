@@ -232,12 +232,6 @@ body {
 .table tbody tr:hover {
     background: rgba(2, 132, 199, 0.08);
 }
-.table tbody tr.absent-row {
-    background: rgba(239, 68, 68, 0.1) !important; /* Slight red background */
-}
-.table tbody tr.absent-row:hover {
-    background: rgba(239, 68, 68, 0.2) !important;
-}
 
 /* Toast Notifications */
 .toast-container {
@@ -813,11 +807,6 @@ $(document).ready(function(){
                 d.user = $('#filter-user').val();
             }
         },
-        createdRow: function(row, data, dataIndex) {
-            if (data.is_absent) {
-                $(row).addClass('absent-row');
-            }
-        },
         columns: [
             { data: 'user_id', render: function(data, type, row) {
                 // try to find staff info from client-side directory
@@ -834,7 +823,12 @@ $(document).ready(function(){
                 return data;
             } },
             { data: 'date' },
-            { data: 'first_punch' },
+            { data: 'first_punch', render: function(data, type, row) {
+                if (row.is_absent) {
+                    return '<strong style="color: #dc2626;">' + data + '</strong>';
+                }
+                return data;
+            } },
             { data: 'last_punch', render: d => d ? d : '' },
             { data: 'work_time', render: d => d ? d : '' },
             { data: 'punch', render: function(d, type, row) {
