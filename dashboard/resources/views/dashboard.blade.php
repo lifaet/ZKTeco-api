@@ -851,12 +851,10 @@ $(document).ready(function(){
                         return ''; // No actions for absent rows
                     }
                     return `
-                        <button class="btn btn-sm btn-primary edit-btn" data-user="${row.user_id}" data-date="${row.date}">
-                            <i class="bi bi-pencil"></i> Edit
-                        </button>
-                        <button class="btn btn-sm btn-danger delete-btn" data-user="${row.user_id}" data-date="${row.date}">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
+                        <button class="btn btn-sm btn-outline-primary edit-btn" data-user="${row.user_id}" data-date="${row.date}">
+                            <i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger delete-btn" data-user="${row.user_id}" data-date="${row.date}">
+                            <i class="bi bi-trash"></i></button>
                     `;
                 }
             }
