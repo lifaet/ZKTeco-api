@@ -699,6 +699,9 @@ function updateFilters(type){
     // copy/export only for daily
     $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
 
+    // hide apply-filter for staff page
+    $('#apply-filter').toggleClass('d-none', type === 'staff');
+
     if (type === 'user') loadUsersIntoSelect();
 }
 
