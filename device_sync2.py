@@ -31,7 +31,7 @@ def setup_logging():
         os.makedirs('logs')
 
     file_handler = RotatingFileHandler(
-        'logs/device_sync.log',
+        'logs/device_sync2.log',
         maxBytes=5 * 1024 * 1024,
         backupCount=7
     )
