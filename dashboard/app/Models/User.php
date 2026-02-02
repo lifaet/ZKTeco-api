@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Staff extends Model
+class User extends Model
 {
-    protected $table = 'staff';
+    protected $table = 'users';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'int';

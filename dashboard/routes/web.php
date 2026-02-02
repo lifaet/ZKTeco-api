@@ -25,12 +25,12 @@ Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
 Route::get('/api/users', [AttendanceController::class, 'users']);
 // legacy/alternate route
 Route::get('/api/latest-attendance', [AttendanceController::class, 'latest']);
-// Staff CRUD API (used by dashboard frontend)
-Route::get('/api/staff', [\App\Http\Controllers\StaffController::class, 'index']);
-Route::post('/api/staff', [\App\Http\Controllers\StaffController::class, 'store']);
-Route::put('/api/staff/{id}', [\App\Http\Controllers\StaffController::class, 'update']);
-Route::delete('/api/staff/{id}', [\App\Http\Controllers\StaffController::class, 'destroy']);
-// Staff page removed: staff UI is embedded in dashboard
+// User CRUD API (used by dashboard frontend)
+Route::get('/api/users', [\App\Http\Controllers\UserController::class, 'index']);
+Route::post('/api/users', [\App\Http\Controllers\UserController::class, 'store']);
+Route::put('/api/users/{id}', [\App\Http\Controllers\UserController::class, 'update']);
+Route::delete('/api/users/{id}', [\App\Http\Controllers\UserController::class, 'destroy']);
+// User page removed: user UI is embedded in dashboard
 Route::get('/api-test', function () {
     try {
         $response = Http::timeout(30)->withHeaders([

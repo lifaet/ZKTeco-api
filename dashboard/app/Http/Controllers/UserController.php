@@ -3,23 +3,23 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Staff;
+use App\Models\User;
 
-class StaffController extends Controller
+class UserController extends Controller
 {
-    // GET /api/staff
+    // GET /api/users
     public function index()
     {
-        return response()->json(Staff::orderBy('id')->get());
+        return response()->json(User::orderBy('id')->get());
     }
 
-    // Return the staff page view
+    // Return the user page view
     public function page()
     {
-        return view('staff');
+        return view('user');
     }
 
-    // POST /api/staff
+    // POST /api/users
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -35,11 +35,11 @@ class StaffController extends Controller
             $data['active'] = (bool) $data['active'];
         }
 
-        $staff = Staff::updateOrCreate(['id' => $data['id']], $data);
-        return response()->json($staff, 201);
+        $user = User::updateOrCreate(['id' => $data['id']], $data);
+        return response()->json($user, 201);
     }
 
-    // PUT /api/staff/{id}
+    // PUT /api/users/{id}
     public function update(Request $request, $id)
     {
         $data = $request->validate([
@@ -54,17 +54,17 @@ class StaffController extends Controller
             $data['active'] = (bool) $data['active'];
         }
 
-        $staff = Staff::findOrFail($id);
-        $staff->update($data);
-        return response()->json($staff);
+        $user = User::findOrFail($id);
+        $user->update($data);
+        return response()->json($user);
     }
 
-    // DELETE /api/staff/{id}
+    // DELETE /api/users/{id}
     public function destroy($id)
     {
-        $staff = Staff::find($id);
-        if ($staff) {
-            $staff->delete();
+        $user = User::find($id);
+        if ($user) {
+            $user->delete();
             return response()->json(['deleted' => true]);
         }
         return response()->json(['deleted' => false], 404);

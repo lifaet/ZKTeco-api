@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Attendance;
-use App\Models\Staff;
+use App\Models\User;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -36,10 +36,10 @@ class AttendanceController extends Controller
             $data = [];
 
             foreach ($groupedRecords as $userId => $records) {
-                // Check staff status
-                $staff = Staff::where('id', $userId)->first();
-                if ($staff && !$staff->active) {
-                    continue; // Skip inactive staff
+                // Check user status
+                $user = User::where('id', $userId)->first();
+                if ($user && !$user->active) {
+                    continue; // Skip inactive users
                 }
 
                 // Calculate times
@@ -67,14 +67,14 @@ class AttendanceController extends Controller
                 ];
             }
 
-            // Now, add absent entries for active staff with no attendance
-            $activeStaff = Staff::where('active', true)->get();
+            // Now, add absent entries for active users with no attendance
+            $activeUsers = User::where('active', true)->get();
             $attendedUserIds = $groupedRecords->keys()->toArray();
 
-            foreach ($activeStaff as $staff) {
-                if (!in_array($staff->id, $attendedUserIds)) {
+            foreach ($activeUsers as $user) {
+                if (!in_array($user->id, $attendedUserIds)) {
                     $data[] = [
-                        'user_id' => $staff->id,
+                        'user_id' => $user->id,
                         'date' => $date,
                         'first_punch' => 'Absent',
                         'last_punch' => '',

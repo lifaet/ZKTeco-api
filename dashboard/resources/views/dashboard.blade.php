@@ -332,7 +332,7 @@ footer .maintenance a:hover {
 ::-webkit-scrollbar-thumb:hover { background: rgba(2, 132, 199, 0.6); }
 
 /* Ensure DataTables stretch to container width and recalc reliably */
-.dataTable, #attendanceTable, #staffTable { width: 100% !important; }
+.dataTable, #attendanceTable, #userTable { width: 100% !important; }
 </style>
 </head>
 <body>
@@ -353,7 +353,7 @@ footer .maintenance a:hover {
     <a href="#" data-type="daily" class="active"><i class="bi bi-calendar-day"></i> Daily</a>
     <a href="#" data-type="monthly"><i class="bi bi-calendar-month"></i> Monthly</a>
     <a href="#" data-type="user"><i class="bi bi-person-circle"></i> User-wise</a>
-    <a href="#" data-type="staff"><i class="bi bi-people"></i> Staff Directory</a>
+    <a href="#" data-type="directory"><i class="bi bi-people"></i> User Directory</a>
     <hr>
     <a href="#" id="logoutBtn" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
 </div>
@@ -402,14 +402,14 @@ footer .maintenance a:hover {
     </table>
     </div>
 
-    <!-- Staff Directory Section (client-side) -->
-    <div id="staffSection" class="d-none">
+    <!-- User Directory Section (client-side) -->
+    <div id="userSection" class="d-none">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Staff Directory</h5>
-            <button id="addStaffBtn" class="btn btn-primary btn-sm">Add Staff</button>
+            <h5 class="mb-0">User Directory</h5>
+            <button id="addUserBtn" class="btn btn-primary btn-sm">Add User</button>
         </div>
 
-        <table id="staffTable" class="table table-striped table-bordered">
+        <table id="userTable" class="table table-striped table-bordered">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -423,7 +423,7 @@ footer .maintenance a:hover {
             <tbody></tbody>
         </table>
 
-        <!-- Staff modals moved to page-level for proper stacking (see bottom of file) -->
+        <!-- User modals moved to page-level for proper stacking (see bottom of file) -->
     </div>
 
     </div>
@@ -443,49 +443,49 @@ footer .maintenance a:hover {
     @csrf
 </form>
 
-<!-- Add/Edit Staff Modal -->
-<div class="modal fade" id="staffModal" tabindex="-1">
+<!-- Add/Edit User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add / Edit Staff</h5>
+                <h5 class="modal-title">Add / Edit User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="staffForm">
-                    <input type="hidden" id="staff-id">
+                <form id="userForm">
+                    <input type="hidden" id="user-id">
                     <div class="mb-3">
                         <label class="form-label">ID</label>
-                        <input type="text" id="staff-input-id" class="form-control">
+                        <input type="text" id="user-input-id" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Name</label>
-                        <input type="text" id="staff-input-name" class="form-control">
+                        <input type="text" id="user-input-name" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" id="staff-input-title" class="form-control">
+                        <input type="text" id="user-input-title" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Department</label>
-                        <input type="text" id="staff-input-dept" class="form-control">
+                        <input type="text" id="user-input-dept" class="form-control">
                     </div>
                     <div class="mb-3 form-check">
-                        <input type="checkbox" id="staff-input-active" class="form-check-input" checked>
-                        <label class="form-check-label" for="staff-input-active">Active</label>
+                        <input type="checkbox" id="user-input-active" class="form-check-input" checked>
+                        <label class="form-check-label" for="user-input-active">Active</label>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="saveStaffBtn" class="btn btn-primary">Save</button>
+                <button type="button" id="saveUserBtn" class="btn btn-primary">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Staff Modal -->
-<div class="modal fade" id="staffDeleteModal" tabindex="-1">
+<!-- Delete User Modal -->
+<div class="modal fade" id="userDeleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -493,12 +493,12 @@ footer .maintenance a:hover {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this staff member?
-                <input type="hidden" id="staff-delete-id">
+                Are you sure you want to delete this user?
+                <input type="hidden" id="user-delete-id">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="confirmDeleteStaff" class="btn btn-danger">Delete</button>
+                <button type="button" id="confirmDeleteUser" class="btn btn-danger">Delete</button>
             </div>
         </div>
     </div>
@@ -560,7 +560,7 @@ footer .maintenance a:hover {
     </div>
 </div>
 
-<!-- staff UI moved to separate blade (/staff) -->
+<!-- user UI moved to separate blade (/user) -->
 
             <!-- Add Attendance Modal -->
             <div class="modal fade" id="addAttendanceModal" tabindex="-1">
@@ -573,9 +573,9 @@ footer .maintenance a:hover {
                         <div class="modal-body">
                             <form id="addAttendanceForm">
                                 <div class="mb-3">
-                                    <label class="form-label">Staff</label>
+                                    <label class="form-label">User</label>
                                     <select id="add-user-select" class="form-select">
-                                        <option value="">Select staff</option>
+                                        <option value="">Select user</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -639,21 +639,21 @@ $('.sidebar a').click(function(e){
     }
 });
 
-// Staff directory will be loaded from the server; start empty.
-window.staffDirectory = [];
+// User directory will be loaded from the server; start empty.
+window.userDirectory = [];
 
 function loadUsersIntoSelect() {
     const sel = $('#filter-user-select');
     sel.empty().append('<option value="">All Users</option>');
 
-    // populate with client-side staff directory first (so names show)
-    (window.staffDirectory || []).forEach(s => {
+    // populate with client-side user directory first (so names show)
+    (window.userDirectory || []).forEach(s => {
         sel.append(`<option value="${s.id}">${s.id} - ${s.name}</option>`);
     });
 
     // then try to fetch additional users from server and append any missing ones
     $.getJSON('/api/users').done(function(users){
-        const existing = new Set((window.staffDirectory || []).map(s => String(s.id)));
+        const existing = new Set((window.userDirectory || []).map(s => String(s.id)));
         users.forEach(u => {
             const uid = String(u.id || u.user_id || u);
             if (!existing.has(uid)) {
@@ -662,7 +662,7 @@ function loadUsersIntoSelect() {
             }
         });
     }).fail(function(){
-        // endpoint not available -> we already populated from staffDirectory
+        // endpoint not available -> we already populated from userDirectory
     });
 }
 
@@ -699,8 +699,8 @@ function updateFilters(type){
     // copy/export only for daily
     $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
 
-    // hide apply-filter for staff page
-    $('#apply-filter').toggleClass('d-none', type === 'staff');
+    // hide apply-filter for user page
+    $('#apply-filter').toggleClass('d-none', type === 'user' || type === 'directory');
 
     if (type === 'user') loadUsersIntoSelect();
 }
@@ -812,10 +812,10 @@ $(document).ready(function(){
         },
         columns: [
             { data: 'user_id', render: function(data, type, row) {
-                // try to find staff info from client-side directory
+                // try to find user info from client-side directory
                 try {
                     var sid = parseInt(data, 10);
-                    var s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
+                    var s = (window.userDirectory || []).find(x => parseInt(x.id,10) === sid);
                     if (s) {
                         // show two-line format: ID Name then Designation, Department
                         var dept = s.department || s.dept || '';
@@ -869,7 +869,7 @@ $(document).ready(function(){
 
 
     // initialize filter UI for current view via URL hash (deep-linking)
-    // Supported hashes: #daily (default), #monthly, #user, #staff
+    // Supported hashes: #daily (default), #monthly, #user, #directory
     function applyView(view) {
         const selected = view || 'daily';
         currentType = selected;
@@ -877,15 +877,15 @@ $(document).ready(function(){
         // mark matching sidebar item active
         $('.sidebar a').each(function(){ if ($(this).data('type') === selected) $(this).addClass('active'); });
         // show/hide main sections
-        if (selected === 'staff') {
+        if (selected === 'directory') {
             $('#attendanceSection').addClass('d-none');
-            $('#staffSection').removeClass('d-none');
+            $('#userSection').removeClass('d-none');
         } else {
-            $('#staffSection').addClass('d-none');
+            $('#userSection').addClass('d-none');
             $('#attendanceSection').removeClass('d-none');
         }
         updateFilters(selected);
-        if (selected !== 'staff' && table && table.ajax && typeof table.ajax.reload === 'function') {
+        if (selected !== 'directory' && table && table.ajax && typeof table.ajax.reload === 'function') {
             table.ajax.reload();
             // Delay adjust so DOM reflow/animations complete before recalculating widths
             setTimeout(function(){
@@ -1125,13 +1125,13 @@ $(document).ready(function(){
         let data = table.rows({ search: 'applied' }).data();
         for (let i = 0; i < data.length; i++) {
             let row = data[i];
-            // find staff info
+            // find user info
             let name = '';
             let desig = '';
             let dept = '';
             try {
                 const sid = parseInt(row.user_id, 10);
-                const s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
+                const s = (window.userDirectory || []).find(x => parseInt(x.id,10) === sid);
                 if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
             } catch (e) {}
 
@@ -1202,7 +1202,7 @@ $(document).ready(function(){
             let dept = '';
             try {
                 const sid = parseInt(row.user_id, 10);
-                const s = (window.staffDirectory || []).find(x => parseInt(x.id,10) === sid);
+                const s = (window.userDirectory || []).find(x => parseInt(x.id,10) === sid);
                 if (s) { name = s.name; desig = s.title; dept = s.dept || s.department || ''; }
             } catch (e) {}
 
@@ -1243,32 +1243,32 @@ $(document).ready(function(){
         const date = $('#filter-date').val();
     });
 
-    // --- Staff directory: prefer server-side storage via API, fallback to localStorage ---
-    function loadStaffFromServer() {
-        $.ajax({ url: '/api/staff', method: 'GET', dataType: 'json', cache: false })
+    // --- User directory: prefer server-side storage via API, fallback to localStorage ---
+    function loadUserFromServer() {
+        $.ajax({ url: '/api/users', method: 'GET', dataType: 'json', cache: false })
             .done(function(res){
                 if (Array.isArray(res)) {
-                    window.staffDirectory = res;
+                    window.userDirectory = res;
                 } else {
-                    window.staffDirectory = [];
+                    window.userDirectory = [];
                 }
-                renderStaffTable();
+                renderUserTable();
             }).fail(function(){
-                window.staffDirectory = [];
-                renderStaffTable();
-                showToast('Error', 'Failed to load staff from server. Changes will not be saved.');
+                window.userDirectory = [];
+                renderUserTable();
+                showToast('Error', 'Failed to load users from server. Changes will not be saved.');
             });
     }
 
-    function saveStaffToLocalCache(){
+    function saveUserToLocalCache(){
         // no-op: persistence is server-side only now
     }
 
-    function renderStaffTable() {
-        const tbody = $('#staffTable tbody');
-        if (!tbody.length) return; // no staff table on this page
+    function renderUserTable() {
+        const tbody = $('#userTable tbody');
+        if (!tbody.length) return; // no user table on this page
         tbody.empty();
-        (window.staffDirectory || []).forEach(function(s){
+        (window.userDirectory || []).forEach(function(s){
             const id = s.id;
             const name = s.name || '';
             const title = s.title || '';
@@ -1285,19 +1285,19 @@ $(document).ready(function(){
                 '<td>' + $('<div>').text(dept).html() + '</td>' +
                 '<td>' + statusBadge + '</td>' +
                 '<td>' +
-                    '<button class="btn btn-sm btn-outline-primary staff-edit" data-id="'+id+'"><i class="bi bi-pencil"></i></button> ' +
-                    '<button class="btn btn-sm btn-outline-danger staff-delete" data-id="'+id+'"><i class="bi bi-trash"></i></button>' +
+                    '<button class="btn btn-sm btn-outline-primary user-edit" data-id="'+id+'"><i class="bi bi-pencil"></i></button> ' +
+                    '<button class="btn btn-sm btn-outline-danger user-delete" data-id="'+id+'"><i class="bi bi-trash"></i></button>' +
                 '</td>' +
                 '</tr>'
             );
             tbody.append(tr);
         });
 
-        // initialize or re-draw DataTable for staff list
-        if ($.fn.DataTable.isDataTable('#staffTable')) {
-            try { $('#staffTable').DataTable().destroy(); } catch(e){}
+        // initialize or re-draw DataTable for user list
+        if ($.fn.DataTable.isDataTable('#userTable')) {
+            try { $('#userTable').DataTable().destroy(); } catch(e){}
         }
-        const st = $('#staffTable').DataTable({
+        const st = $('#userTable').DataTable({
             paging: true,
             searching: true,
             info: true,
@@ -1305,59 +1305,59 @@ $(document).ready(function(){
             pageLength: 25,
             order: [[0, 'asc']]
         });
-        try { if (st && st.columns && typeof st.columns.adjust === 'function') st.columns.adjust().draw(false); } catch(e) { console.debug('staff columns.adjust failed', e); }
-        // also ensure attendance table recalculates after staff table operations
+        try { if (st && st.columns && typeof st.columns.adjust === 'function') st.columns.adjust().draw(false); } catch(e) { console.debug('user columns.adjust failed', e); }
+        // also ensure attendance table recalculates after user table operations
         setTimeout(function(){
             try { if (table && table.columns && typeof table.columns.adjust === 'function') table.columns.adjust().draw(false); } catch(e) { console.debug('attendance columns.adjust failed', e); }
         }, 150);
     }
 
     // wire buttons
-    $('#addStaffBtn').click(function(){
-        $('#staff-id').val('');
-        $('#staff-input-id').val('');
-        $('#staff-input-name').val('');
-        $('#staff-input-title').val('');
-        $('#staff-input-dept').val('');
-        $('#staff-input-active').prop('checked', true); // default to active
-        $('#staffModal').modal('show');
+    $('#addUserBtn').click(function(){
+        $('#user-id').val('');
+        $('#user-input-id').val('');
+        $('#user-input-name').val('');
+        $('#user-input-title').val('');
+        $('#user-input-dept').val('');
+        $('#user-input-active').prop('checked', true); // default to active
+        $('#userModal').modal('show');
     });
 
     // Save (Add / Edit)
-    $('#saveStaffBtn').click(function(){
-        const originalId = String($('#staff-id').val() || '').trim();
-        const idVal = String($('#staff-input-id').val()).trim();
-        const name = String($('#staff-input-name').val() || '').trim();
-        const title = String($('#staff-input-title').val() || '').trim();
-        const dept = String($('#staff-input-dept').val() || '').trim();
-        const active = $('#staff-input-active').is(':checked');
+    $('#saveUserBtn').click(function(){
+        const originalId = String($('#user-id').val() || '').trim();
+        const idVal = String($('#user-input-id').val()).trim();
+        const name = String($('#user-input-name').val() || '').trim();
+        const title = String($('#user-input-title').val() || '').trim();
+        const dept = String($('#user-input-dept').val() || '').trim();
+        const active = $('#user-input-active').is(':checked');
 
         if (!idVal || !name) {
             showToast('Error', 'Please provide at least ID and Name');
             return;
         }
 
-        // ensure staffDirectory exists in-memory
-        window.staffDirectory = window.staffDirectory || [];
+        // ensure userDirectory exists in-memory
+        window.userDirectory = window.userDirectory || [];
 
         // edit mode
         if (originalId) {
-            // call PUT /api/staff/{id}
+            // call PUT /api/users/{id}
             $.ajax({
-                url: '/api/staff/' + encodeURIComponent(originalId),
+                url: '/api/users/' + encodeURIComponent(originalId),
                 method: 'PUT',
                 contentType: 'application/json',
                 data: JSON.stringify({ name: name, title: title, department: dept, active: active })
             }).done(function(updated){
                 // update local copy with server response and refresh UI
-                const idx = window.staffDirectory.findIndex(x => String(x.id) === String(originalId));
-                if (idx !== -1) window.staffDirectory[idx] = updated;
-                renderStaffTable();
-                $('#staffModal').modal('hide');
-                showToast('Saved', 'Staff member updated');
+                const idx = window.userDirectory.findIndex(x => String(x.id) === String(originalId));
+                if (idx !== -1) window.userDirectory[idx] = updated;
+                renderUserTable();
+                $('#userModal').modal('hide');
+                showToast('Saved', 'User updated');
                 if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
             }).fail(function(xhr){
-                const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update staff member on server';
+                const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update user on server';
                 showToast('Error', msg);
             });
             return;
@@ -1365,94 +1365,94 @@ $(document).ready(function(){
 
         // create mode
         $.ajax({
-            url: '/api/staff',
+            url: '/api/users',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept, active: active })
         }).done(function(created){
-            window.staffDirectory = window.staffDirectory || [];
-            window.staffDirectory.push(created);
-            renderStaffTable();
-            $('#staffModal').modal('hide');
-            showToast('Saved', 'Staff member added');
+            window.userDirectory = window.userDirectory || [];
+            window.userDirectory.push(created);
+            renderUserTable();
+            $('#userModal').modal('hide');
+            showToast('Saved', 'User added');
             if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
         }).fail(function(xhr){
-            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to add staff member on server';
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to add user on server';
             showToast('Error', msg);
         });
     });
 
     // Edit / Delete handlers delegated
-    $('#staffTable tbody').on('click', '.staff-edit', function(){
+    $('#userTable tbody').on('click', '.user-edit', function(){
         const id = $(this).data('id');
-        const s = (window.staffDirectory || []).find(x => String(x.id) === String(id));
-        if (!s) return showToast('Error', 'Staff member not found');
-        $('#staff-id').val(s.id);
-        $('#staff-input-id').val(s.id);
-        $('#staff-input-name').val(s.name || '');
-        $('#staff-input-title').val(s.title || '');
-        $('#staff-input-dept').val(s.dept || s.department || '');
-        $('#staff-input-active').prop('checked', s.active !== false);
-        $('#staffModal').modal('show');
+        const s = (window.userDirectory || []).find(x => String(x.id) === String(id));
+        if (!s) return showToast('Error', 'User not found');
+        $('#user-id').val(s.id);
+        $('#user-input-id').val(s.id);
+        $('#user-input-name').val(s.name || '');
+        $('#user-input-title').val(s.title || '');
+        $('#user-input-dept').val(s.dept || s.department || '');
+        $('#user-input-active').prop('checked', s.active !== false);
+        $('#userModal').modal('show');
     });
 
-    $('#staffTable tbody').on('click', '.staff-delete', function(){
+    $('#userTable tbody').on('click', '.user-delete', function(){
         const id = $(this).data('id');
-        $('#staff-delete-id').val(id);
-        $('#staffDeleteModal').modal('show');
+        $('#user-delete-id').val(id);
+        $('#userDeleteModal').modal('show');
     });
 
-    $('#staffTable tbody').on('click', '.staff-toggle', function(){
+    $('#userTable tbody').on('click', '.user-toggle', function(){
         const id = $(this).data('id');
-        const s = (window.staffDirectory || []).find(x => String(x.id) === String(id));
-        if (!s) return showToast('Error', 'Staff member not found');
+        const s = (window.userDirectory || []).find(x => String(x.id) === String(id));
+        if (!s) return showToast('Error', 'User not found');
         
         const newActive = !s.active; // toggle active status
         $.ajax({
-            url: '/api/staff/' + encodeURIComponent(id),
+            url: '/api/users/' + encodeURIComponent(id),
             method: 'PUT',
             contentType: 'application/json',
             data: JSON.stringify({ active: newActive })
         }).done(function(response){
-            // Update local staff directory
+            // Update local user directory
             s.active = newActive;
-            renderStaffTable();
-            showToast('Success', 'Staff member ' + (newActive ? 'activated' : 'deactivated'));
+            renderUserTable();
+            showToast('Success', 'User ' + (newActive ? 'activated' : 'deactivated'));
             // Reload attendance table to reflect changes
             if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
         }).fail(function(xhr){
-            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update staff status';
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to update user status';
             showToast('Error', msg);
         });
     });
 
-    $('#confirmDeleteStaff').click(function(){
-        const id = String($('#staff-delete-id').val());
-        $.ajax({ url: '/api/staff/' + encodeURIComponent(id), method: 'DELETE' }).done(function(){
-            window.staffDirectory = (window.staffDirectory || []).filter(x => String(x.id) !== id);
-            renderStaffTable();
-            $('#staffDeleteModal').modal('hide');
-            showToast('Deleted', 'Staff member removed');
+    $('#confirmDeleteUser').click(function(){
+        const id = String($('#user-delete-id').val());
+        $.ajax({ url: '/api/users/' + encodeURIComponent(id), method: 'DELETE' }).done(function(){
+            window.userDirectory = (window.userDirectory || []).filter(x => String(x.id) !== id);
+            renderUserTable();
+            $('#userDeleteModal').modal('hide');
+            showToast('Deleted', 'User removed');
             if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
         }).fail(function(xhr){
-            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete staff member on server';
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to delete user on server';
             showToast('Error', msg);
         });
     });
 
-    // Initialize staff list from server and render
-    loadStaffFromServer();
+    // Initialize user list from server and render
+    loadUserFromServer();
 
     // Add Attendance button handler
     $('#addAttendanceBtn').click(function(){
         const sel = $('#add-user-select');
-        sel.empty().append('<option value="">Select staff</option>');
-        (window.staffDirectory || []).forEach(s => {
+        sel.empty().append('<option value="">Select user</option>');
+        (window.userDirectory || []).forEach(s => {
             sel.append(`<option value="${s.id}">${s.id} - ${s.name || ''}</option>`);
         });
-        // try to fetch any users not present in staffDirectory
+        // try to fetch any users not present in userDirectory
         $.getJSON('/api/users').done(function(users){
-            const existing = new Set((window.staffDirectory || []).map(s => String(s.id)));
+            const existing = new Set((window.userDirectory || []).map(s => String(s.id)));
             users.forEach(u => {
                 const uid = String(u.id || u.user_id || u);
                 if (!existing.has(uid)) sel.append(`<option value="${uid}">${uid}</option>`);
@@ -1475,7 +1475,7 @@ $(document).ready(function(){
         const status = $('#add-status').val();
 
         if (!user_id || !date || !first_punch) {
-            showToast('Error', 'Please select staff and provide date and first punch');
+            showToast('Error', 'Please select user and provide date and first punch');
             return;
         }
 

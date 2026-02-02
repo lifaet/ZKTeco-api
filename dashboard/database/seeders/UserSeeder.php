@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
-class StaffSeeder extends Seeder
+class UserSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -37,7 +37,7 @@ class StaffSeeder extends Seeder
         ];
 
         foreach ($rows as $r) {
-            DB::table('staff')->updateOrInsert(['id' => $r['id']], array_merge($r, ['active' => true, 'created_at' => $now, 'updated_at' => $now]));
+            DB::table('users')->updateOrInsert(['id' => $r['id']], array_merge($r, ['active' => true, 'created_at' => $now, 'updated_at' => $now]));
         }
     }
 }
