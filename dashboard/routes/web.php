@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Attendance2Controller;
 
 // auth-free endpoints
 Route::get('/login', [DashboardController::class, 'showLogin']);
@@ -13,6 +14,9 @@ Route::post('/logout', [DashboardController::class, 'logout']);
 
 // protected dashboard
 Route::get('/', [DashboardController::class, 'index']);
+// Attendance2 routes
+Route::get('/attendance2', [Attendance2Controller::class, 'index']);
+Route::get('/api/attendance2-summary', [Attendance2Controller::class, 'data']);
 // Use AttendanceController::data for DataTables server-side processing (returns table-shaped data)
 Route::get('/api/attendance-summary', [AttendanceController::class, 'data']);
 Route::post('/api/attendance/update', [AttendanceController::class, 'update']);

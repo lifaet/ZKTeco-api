@@ -354,6 +354,7 @@ footer .maintenance a:hover {
     <a href="#" data-type="monthly"><i class="bi bi-calendar-month"></i> Monthly</a>
     <a href="#" data-type="user"><i class="bi bi-person-circle"></i> User-wise</a>
     <a href="#" data-type="directory"><i class="bi bi-people"></i> User Directory</a>
+    <a href="/attendance2" target="_blank"><i class="bi bi-clock"></i> Attendance2</a>
     <hr>
     <a href="#" id="logoutBtn" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
 </div>
