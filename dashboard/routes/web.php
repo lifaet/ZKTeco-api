@@ -17,6 +17,7 @@ Route::get('/', [DashboardController::class, 'index']);
 // Attendance2 routes
 Route::get('/attendance2', [Attendance2Controller::class, 'index']);
 Route::get('/api/attendance2-summary', [Attendance2Controller::class, 'data']);
+Route::get('/api/attendance2-latest', [Attendance2Controller::class, 'latest']);
 // Use AttendanceController::data for DataTables server-side processing (returns table-shaped data)
 Route::get('/api/attendance-summary', [AttendanceController::class, 'data']);
 Route::post('/api/attendance/update', [AttendanceController::class, 'update']);

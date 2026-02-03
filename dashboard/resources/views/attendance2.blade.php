@@ -157,7 +157,7 @@ body {
 </div>
 
 <!-- Toast Container -->
-<div class="toast-container position-fixed top-0 end-0 p-3"></div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -166,6 +166,10 @@ body {
 
 <script>
 let table;
+let lastCheckId = 0; // last known entry ID
+// Polling interval (ms) for /api/attendance2-latest. Lower values = more frequent checks.
+// Be careful lowering too far: very frequent polling increases DB/load. Default 4000ms = 4s.
+const CHECK_LATEST_INTERVAL_MS = 4000;
 
 $(document).ready(function(){
     // include CSRF token for all AJAX POST requests
@@ -250,6 +254,18 @@ function initializeDataTable() {
         pageLength: 50
     });
 
+    // first check last punch (store numeric id) and only start polling after we have attempted
+    $.ajax({ url: '/api/attendance2-latest', method: 'GET', dataType: 'json', cache: false })
+        .done(function(res){
+            lastCheckId = res && res.id ? (parseInt(res.id, 10) || 0) : lastCheckId;
+            // start polling after initial successful fetch
+            setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
+        }).fail(function(xhr, status){
+            console.debug('initial check-latest failed', status, xhr && xhr.status);
+            // even on failure, start polling so we can recover later
+            setInterval(checkNewPunch, CHECK_LATEST_INTERVAL_MS);
+        });
+
     // Update current date/time
     function updateDateTime() {
         const now = new Date();
@@ -268,6 +284,62 @@ function initializeDataTable() {
     setInterval(updateDateTime, 1000);
 }
 
+function checkNewPunch(){
+    // Use $.ajax with cache:false to avoid cached responses from proxies
+    $.ajax({
+        url: '/api/attendance2-latest',
+        method: 'GET',
+        dataType: 'json',
+        cache: false,
+        data: { last_id: lastCheckId }
+    }).done(function(res){
+        // Defensive extraction: API might return {id:...} or {data:{id:...}} or {latest:{id:...}}
+        function extractId(r){
+            if (!r) return 0;
+            if (r.id) return parseInt(r.id,10) || 0;
+            if (r.latest && r.latest.id) return parseInt(r.latest.id,10) || 0;
+            if (r.data && r.data.id) return parseInt(r.data.id,10) || 0;
+            // try first element if array
+            if (Array.isArray(r) && r.length && r[0].id) return parseInt(r[0].id,10) || 0;
+            return 0;
+        }
+
+        const id = extractId(res);
+        console.debug('check-latest response', res, 'extractedId', id, 'lastCheckId', lastCheckId);
+
+        // If we haven't initialized lastCheckId yet (fresh page or initial failure),
+        // set it to the server-provided id but DO NOT show a toast — this prevents
+        // showing the current latest row as "new" on every poll when the server
+        // falls back to returning the most recent row.
+        if (!lastCheckId || lastCheckId === 0) {
+            lastCheckId = id;
+            return;
+        }
+
+        if (id && id > lastCheckId) {
+            lastCheckId = id;
+            // Build a friendly message. If specific fields exist, show them; otherwise show a generic notice.
+            const user = res.user_id || res.user || null;
+            const time = res.time || res.timestamp || null;
+            const date = res.date || null;
+            let message = '';
+            if (user || time || date) {
+                // prefer a punch-style message when details available
+                message = `User ${user || 'Unknown'}` + (time ? ` recorded at ${time}` : '') + (date ? ` on ${date}` : '');
+            } else {
+                message = `New record added (id: ${id})`;
+            }
+            showToast('New Punch', message);
+            if (table && table.ajax && typeof table.ajax.reload === 'function') {
+                table.ajax.reload(null, false); // reload data silently
+            }
+        }
+    }).fail(function(xhr, status){
+        console.debug('check-latest failed', status, xhr && xhr.status);
+        // On failure, don't update lastCheckId — keep polling with the last known good value
+    });
+}
+
 function showToast(title, message){
     const toastId = 'toast-' + Date.now();
     const toastHTML = `
@@ -279,9 +351,9 @@ function showToast(title, message){
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
       </div>`;
-        // ensure a toast container exists
-        if (!$('.toast-container').length) {
-            $('body').append('<div class="toast-container position-fixed top-0 end-0 p-3"></div>');
+        // ensure a toast container exists (some other partials create it, but not always)
+        if ($('.toast-container').length === 0) {
+            $('body').append('<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>');
         }
         $('.toast-container').append(toastHTML);
         const toastElement = new bootstrap.Toast(document.getElementById(toastId));
