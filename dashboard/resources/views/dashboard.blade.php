@@ -355,7 +355,7 @@ footer .maintenance a:hover {
     <a href="#" data-type="user"><i class="bi bi-person-circle"></i> User-wise</a>
     <a href="#" data-type="directory"><i class="bi bi-people"></i> User Directory</a>
     @if(env('ATTENDANCE2_ENABLED'))
-    <a href="/attendance2" target="_blank"><i class="bi bi-clock"></i> Attendance2</a>
+    <a href="/attendance2"><i class="bi bi-clock"></i> Attendance2</a>
     @endif
     <hr>
     <a href="#" id="logoutBtn" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
