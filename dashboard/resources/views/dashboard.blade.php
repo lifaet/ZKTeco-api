@@ -703,7 +703,7 @@ function updateFilters(type){
     $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
 
     // hide apply-filter for user page
-    $('#apply-filter').toggleClass('d-none', type === 'user' || type === 'directory');
+    $('#apply-filter').toggleClass('d-none', type === 'directory');
 
     if (type === 'user') loadUsersIntoSelect();
 }

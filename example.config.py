@@ -13,3 +13,4 @@ TABLE_NAME = 'attendances'
 # For API server
 # API_TOKEN = "test12345"
 # API_PORT = 8080
+ 
