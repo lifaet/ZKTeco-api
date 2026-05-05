@@ -437,7 +437,7 @@ footer .maintenance a:hover {
 
 <!-- Footer -->
 <footer>
-    <div class="copyright">&copy; 2025 Attendance Management System</div>
+    <div class="copyright">&copy; {{ date("Y") }} Attendance Management System</div>
     <div class="maintenance" style="margin-left: auto;">Maintenance by <a href="https://lifaet.github.io">ZIM</a></div>
 </footer>
 
