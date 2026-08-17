@@ -37,12 +37,9 @@ class AttendanceController extends Controller
             }
             $lastWorkingDay = $cursor->toDateString();
 
-            // --- Last punch of each user before the selected date (30-day lookback) ---
-            // If a user punched on the last working day this picks that punch;
-            // otherwise it falls back to their most recent earlier punch.
-            $lookbackStart = Carbon::parse($date)->subDays(30)->startOfDay();
-            $prevPunches = Attendance::where('timestamp', '<', $date . ' 00:00:00')
-                ->where('timestamp', '>=', $lookbackStart)
+            // --- Last punch of each user on the last working day ONLY ---
+            // No fallback: if the user has no punch on that day, the column stays blank.
+            $prevPunches = Attendance::whereDate('timestamp', $lastWorkingDay)
                 ->orderBy('timestamp')
                 ->get()
                 ->groupBy('user_id')
@@ -50,7 +47,7 @@ class AttendanceController extends Controller
                     return $records->last();
                 });
 
-            $buildPrev = function ($userId) use ($prevPunches, $lastWorkingDay) {
+            $buildPrev = function ($userId) use ($prevPunches) {
                 $prev = $prevPunches->get($userId);
                 if (! $prev) {
                     return ['prev_punch' => '', 'prev_date' => '', 'prev_stale' => false];
@@ -59,8 +56,7 @@ class AttendanceController extends Controller
                 return [
                     'prev_punch' => $ts->format('H:i:s'),
                     'prev_date' => $ts->format('Y-m-d'),
-                    // stale = older than the expected last working day (user missed that day)
-                    'prev_stale' => $ts->toDateString() !== $lastWorkingDay,
+                    'prev_stale' => false,
                 ];
             };
 
