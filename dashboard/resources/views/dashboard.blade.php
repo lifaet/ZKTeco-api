@@ -386,6 +386,7 @@ footer .maintenance a:hover {
         <button id="addAttendanceBtn" class="btn btn-warning">Add Attendance</button>
         <button id="copy-daily" class="btn btn-outline-secondary d-none">Copy</button>
         <button id="export-daily" class="btn btn-outline-success d-none">Export to CSV</button>
+        <button id="settingsBtn" class="btn btn-outline-secondary" title="Weekend &amp; Holiday Settings"><i class="bi bi-gear"></i></button>
     </div>
 
     <div id="attendanceSection">
@@ -394,6 +395,7 @@ footer .maintenance a:hover {
             <tr>
                 <th>User</th>
                 <th>Date</th>
+                <th>Last Day Last Punch</th>
                 <th>First Punch</th>
                 <th>Last Punch</th>
                 <th>Work Time</th>
@@ -446,6 +448,46 @@ footer .maintenance a:hover {
 <form id="logoutForm" method="POST" action="/logout" style="display:none;">
     @csrf
 </form>
+
+<!-- Weekend & Holiday Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-gear"></i> Weekend &amp; Holiday Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Weekend Days</label>
+                    <div id="weekend-days" class="d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="0" id="wd-0"><label class="form-check-label" for="wd-0">Sunday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="1" id="wd-1"><label class="form-check-label" for="wd-1">Monday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="2" id="wd-2"><label class="form-check-label" for="wd-2">Tuesday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="3" id="wd-3"><label class="form-check-label" for="wd-3">Wednesday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="4" id="wd-4"><label class="form-check-label" for="wd-4">Thursday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="5" id="wd-5"><label class="form-check-label" for="wd-5">Friday</label></div>
+                        <div class="form-check"><input class="form-check-input weekend-day" type="checkbox" value="6" id="wd-6"><label class="form-check-label" for="wd-6">Saturday</label></div>
+                    </div>
+                    <small class="text-muted">Used to find the previous working day for the "Last Day Last Punch" column.</small>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Holidays</label>
+                    <div class="input-group mb-2" style="max-width:280px;">
+                        <input type="date" id="holiday-input" class="form-control">
+                        <button type="button" id="addHolidayBtn" class="btn btn-outline-primary">Add</button>
+                    </div>
+                    <ul id="holiday-list" class="list-group" style="max-height:200px; overflow-y:auto;"></ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveSettingsBtn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Add/Edit User Modal -->
 <div class="modal fade" id="userModal" tabindex="-1">
@@ -708,6 +750,9 @@ function updateFilters(type){
     // copy/export only for daily
     $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
 
+    // "Last Day Last Punch" column only makes sense on the daily view
+    try { if (typeof table !== 'undefined' && table && table.column) table.column(2).visible(type === 'daily'); } catch(e) {}
+
     // hide apply-filter for user page
     $('#apply-filter').toggleClass('d-none', type === 'directory');
 
@@ -835,6 +880,20 @@ $(document).ready(function(){
                 return data;
             } },
             { data: 'date' },
+            { data: 'prev_punch', orderable: false, defaultContent: '', render: function(data, type, row) {
+                if (!data) return '<span class="text-muted">—</span>';
+                var dateLabel = '';
+                if (row.prev_date) {
+                    try {
+                        var d = new Date(row.prev_date + 'T00:00:00');
+                        dateLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    } catch(e) { dateLabel = row.prev_date; }
+                }
+                // stale = punch is older than the last working day (missed that day)
+                var cls = row.prev_stale ? 'text-warning' : 'text-muted';
+                var title = row.prev_stale ? ' title="Older than the last working day"' : '';
+                return '<div' + title + '>' + data + (dateLabel ? '<br><small class="' + cls + '">' + dateLabel + (row.prev_stale ? ' ⚠' : '') + '</small>' : '') + '</div>';
+            } },
             { data: 'first_punch', render: function(data, type, row) {
                 if (row.is_absent) {
                     return '<strong style="color: #dc2626;">' + data + '</strong>';
@@ -1150,6 +1209,7 @@ $(document).ready(function(){
                 desig,
                 dept,
                 row.date,
+                (row.prev_punch ? row.prev_punch + (row.prev_date ? ' (' + row.prev_date + ')' : '') : ''),
                 row.first_punch,
                 row.last_punch,
                 row.work_time,
@@ -1221,6 +1281,7 @@ $(document).ready(function(){
                 desig,
                 dept,
                 row.date,
+                (row.prev_punch ? row.prev_punch + (row.prev_date ? ' (' + row.prev_date + ')' : '') : ''),
                 row.first_punch,
                 row.last_punch,
                 row.work_time,
@@ -1250,6 +1311,72 @@ $(document).ready(function(){
     // Handle Export Daily button
     $('#export-daily').click(function() {
         const date = $('#filter-date').val();
+    });
+
+    // --- Weekend & Holiday settings ---
+    let settingsHolidays = [];
+
+    function renderHolidayList() {
+        const ul = $('#holiday-list');
+        ul.empty();
+        if (!settingsHolidays.length) {
+            ul.append('<li class="list-group-item text-muted">No holidays configured</li>');
+            return;
+        }
+        settingsHolidays.slice().sort().forEach(function(d){
+            ul.append(
+                '<li class="list-group-item d-flex justify-content-between align-items-center py-1">' +
+                d +
+                '<button type="button" class="btn btn-sm btn-outline-danger holiday-remove" data-date="' + d + '"><i class="bi bi-x"></i></button>' +
+                '</li>'
+            );
+        });
+    }
+
+    $('#settingsBtn').click(function(){
+        $.ajax({ url: '/api/settings', method: 'GET', dataType: 'json', cache: false })
+            .done(function(res){
+                const wd = (res && Array.isArray(res.weekend_days)) ? res.weekend_days : [5,6];
+                $('.weekend-day').each(function(){
+                    $(this).prop('checked', wd.indexOf(Number($(this).val())) !== -1);
+                });
+                settingsHolidays = (res && Array.isArray(res.holidays)) ? res.holidays : [];
+                renderHolidayList();
+                $('#settingsModal').modal('show');
+            }).fail(function(){
+                showToast('Error', 'Failed to load settings');
+            });
+    });
+
+    $('#addHolidayBtn').click(function(){
+        const d = $('#holiday-input').val();
+        if (!d) return;
+        if (settingsHolidays.indexOf(d) === -1) settingsHolidays.push(d);
+        $('#holiday-input').val('');
+        renderHolidayList();
+    });
+
+    $('#holiday-list').on('click', '.holiday-remove', function(){
+        const d = $(this).data('date');
+        settingsHolidays = settingsHolidays.filter(x => x !== d);
+        renderHolidayList();
+    });
+
+    $('#saveSettingsBtn').click(function(){
+        const weekendDays = $('.weekend-day:checked').map(function(){ return Number($(this).val()); }).get();
+        $.ajax({
+            url: '/api/settings',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ weekend_days: weekendDays, holidays: settingsHolidays })
+        }).done(function(){
+            $('#settingsModal').modal('hide');
+            showToast('Saved', 'Weekend & holiday settings updated');
+            if (table && table.ajax && typeof table.ajax.reload === 'function') table.ajax.reload(null, false);
+        }).fail(function(xhr){
+            const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to save settings';
+            showToast('Error', msg);
+        });
     });
 
     // --- User directory: prefer server-side storage via API, fallback to localStorage ---

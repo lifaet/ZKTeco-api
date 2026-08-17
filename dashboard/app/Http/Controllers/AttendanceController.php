@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Models\Setting;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -26,6 +27,43 @@ class AttendanceController extends Controller
         $length = (int) $request->input('length', 10);
 
         if ($type === 'daily' && $date) {
+            // --- Determine the last working day before the selected date (skips weekends & holidays) ---
+            $weekendDays = Setting::getValue('weekend_days', [5, 6]); // 0=Sun ... 6=Sat; default Fri+Sat
+            $holidays = Setting::getValue('holidays', []);
+            $cursor = Carbon::parse($date)->subDay();
+            $guard = 0;
+            while ($guard++ < 60 && (in_array($cursor->dayOfWeek, $weekendDays) || in_array($cursor->toDateString(), $holidays))) {
+                $cursor->subDay();
+            }
+            $lastWorkingDay = $cursor->toDateString();
+
+            // --- Last punch of each user before the selected date (30-day lookback) ---
+            // If a user punched on the last working day this picks that punch;
+            // otherwise it falls back to their most recent earlier punch.
+            $lookbackStart = Carbon::parse($date)->subDays(30)->startOfDay();
+            $prevPunches = Attendance::where('timestamp', '<', $date . ' 00:00:00')
+                ->where('timestamp', '>=', $lookbackStart)
+                ->orderBy('timestamp')
+                ->get()
+                ->groupBy('user_id')
+                ->map(function ($records) {
+                    return $records->last();
+                });
+
+            $buildPrev = function ($userId) use ($prevPunches, $lastWorkingDay) {
+                $prev = $prevPunches->get($userId);
+                if (! $prev) {
+                    return ['prev_punch' => '', 'prev_date' => '', 'prev_stale' => false];
+                }
+                $ts = Carbon::parse($prev->timestamp);
+                return [
+                    'prev_punch' => $ts->format('H:i:s'),
+                    'prev_date' => $ts->format('Y-m-d'),
+                    // stale = older than the expected last working day (user missed that day)
+                    'prev_stale' => $ts->toDateString() !== $lastWorkingDay,
+                ];
+            };
+
             // Get all attendance records for the date
             $attendanceRecords = Attendance::whereDate('timestamp', $date)
                 ->orderBy('timestamp')
@@ -55,7 +93,7 @@ class AttendanceController extends Controller
                     $workTime = sprintf('%02d:%02d:%02d', $diff->h, $diff->i, $diff->s ?? 0);
                 }
 
-                $data[] = [
+                $data[] = array_merge([
                     'user_id' => $userId,
                     'date' => $date,
                     'first_punch' => $inTime,
@@ -64,7 +102,7 @@ class AttendanceController extends Controller
                     'punch' => $last->punch ?? '',
                     'status' => $last->status ?? '',
                     'is_absent' => false,
-                ];
+                ], $buildPrev($userId));
             }
 
             // Now, add absent entries for active users with no attendance
@@ -73,7 +111,7 @@ class AttendanceController extends Controller
 
             foreach ($activeUsers as $user) {
                 if (!in_array($user->id, $attendedUserIds)) {
-                    $data[] = [
+                    $data[] = array_merge([
                         'user_id' => $user->id,
                         'date' => $date,
                         'first_punch' => 'Absent',
@@ -82,7 +120,7 @@ class AttendanceController extends Controller
                         'punch' => '',
                         'status' => '',
                         'is_absent' => true,
-                    ];
+                    ], $buildPrev($user->id));
                 }
             }
 

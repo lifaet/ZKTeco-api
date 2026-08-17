@@ -28,6 +28,9 @@ Route::post('/api/attendance/add', [AttendanceController::class, 'add']);
 Route::get('/api/check-latest', [AttendanceController::class, 'latest']);
 // users endpoint for populating user dropdowns
 Route::get('/api/users', [AttendanceController::class, 'users']);
+// weekend & holiday settings
+Route::get('/api/settings', [\App\Http\Controllers\SettingController::class, 'index']);
+Route::post('/api/settings', [\App\Http\Controllers\SettingController::class, 'update']);
 // legacy/alternate route
 Route::get('/api/latest-attendance', [AttendanceController::class, 'latest']);
 // User CRUD API (used by dashboard frontend)
