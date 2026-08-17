@@ -386,6 +386,7 @@ footer .maintenance a:hover {
         <button id="addAttendanceBtn" class="btn btn-warning">Add Attendance</button>
         <button id="copy-daily" class="btn btn-outline-secondary d-none">Copy</button>
         <button id="export-daily" class="btn btn-outline-success d-none">Export to CSV</button>
+        <button id="formatted-copy" class="btn btn-outline-primary d-none"><i class="bi bi-clipboard-check"></i> Formatted Copy</button>
         <button id="settingsBtn" class="btn btn-outline-secondary" title="Weekend &amp; Holiday Settings"><i class="bi bi-gear"></i></button>
     </div>
 
@@ -748,7 +749,7 @@ function updateFilters(type){
     $('.prev-month, .next-month').toggle(type === 'monthly');
 
     // copy/export only for daily
-    $('#copy-daily, #export-daily').toggleClass('d-none', type !== 'daily');
+    $('#copy-daily, #export-daily, #formatted-copy').toggleClass('d-none', type !== 'daily');
 
     // "Last Day Last Punch" column only makes sense on the daily view
     try { if (typeof table !== 'undefined' && table && table.column) table.column(2).visible(type === 'daily'); } catch(e) {}
@@ -1377,6 +1378,114 @@ $(document).ready(function(){
             const msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to save settings';
             showToast('Error', msg);
         });
+    });
+
+    // Handle Formatted Copy button (Daily Attendance Record on the clipboard, paste into Excel/Sheets/Docs)
+    $('#formatted-copy').click(function() {
+        const date = $('#filter-date').val();
+        if (!date) { showToast('Error', 'Pick a date first'); return; }
+
+        function fmtDMY(iso) {
+            if (!iso) return '';
+            const p = String(iso).split('-');
+            return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+        }
+        function fmtHM(t) {
+            if (!t) return '';
+            const p = String(t).split(':');
+            return p.length >= 2 ? (p[0] + ':' + p[1]) : t;
+        }
+        function esc(s) {
+            return $('<div>').text(s == null ? '' : String(s)).html();
+        }
+
+        // copy rich HTML to the clipboard, with fallbacks for http / older browsers
+        function copyHtmlToClipboard(html, plain) {
+            if (navigator.clipboard && window.ClipboardItem && window.isSecureContext) {
+                return navigator.clipboard.write([new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([plain], { type: 'text/plain' })
+                })]);
+            }
+            return new Promise(function(resolve, reject) {
+                const div = document.createElement('div');
+                div.setAttribute('contenteditable', 'true');
+                div.style.position = 'fixed';
+                div.style.left = '-9999px';
+                div.style.top = '0';
+                div.innerHTML = html;
+                document.body.appendChild(div);
+                const range = document.createRange();
+                range.selectNodeContents(div);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) {}
+                sel.removeAllRanges();
+                document.body.removeChild(div);
+                ok ? resolve() : reject(new Error('copy command failed'));
+            });
+        }
+
+        // fetch ALL rows for the day (not just the visible page)
+        $.getJSON('/api/attendance-summary', { type: 'daily', date: date, start: 0, length: 1000000, draw: 1 })
+            .done(function(res) {
+                const rows = (res && res.data) || [];
+                const lastWorkDay = res && res.last_working_day ? res.last_working_day : '';
+
+                const BR = '<br style="mso-data-placement:same-cell;">';
+                const td = 'border:1px solid #000; padding:4px 8px; vertical-align:middle;';
+
+                let html = '<table style="border-collapse:collapse; font-family:Arial, sans-serif; font-size:11pt;">';
+                // Title (merged across 5 columns)
+                html += '<tr><td colspan="5" style="' + td + ' background:#dce6f1; text-align:center; font-size:14pt; font-weight:bold;">'
+                     + 'Daily Attendance Record' + BR + 'Date: ' + fmtDMY(date) + '</td></tr>';
+                // Header row
+                const headers = ['AC-No.', 'Name', 'Check out (' + fmtDMY(lastWorkDay) + ')', 'Check in (' + fmtDMY(date) + ')', 'Remarks'];
+                html += '<tr>' + headers.map(function(h) {
+                    return '<td style="' + td + ' font-weight:bold; text-align:center;">' + h + '</td>';
+                }).join('') + '</tr>';
+
+                // plain-text version (tab separated) for apps that only take text
+                let plainLines = ['Daily Attendance Record', 'Date: ' + fmtDMY(date), headers.join('\t')];
+
+                rows.forEach(function(r) {
+                    // name + designation from the user directory
+                    let name = '', title = '';
+                    try {
+                        const s = (window.userDirectory || []).find(x => parseInt(x.id, 10) === parseInt(r.user_id, 10));
+                        if (s) { name = s.name || ''; title = s.title || ''; }
+                    } catch (e) {}
+
+                    // Check out: previous punch time; add its date if older than the last working day
+                    let checkOut = fmtHM(r.prev_punch);
+                    if (checkOut && r.prev_stale && r.prev_date) checkOut += ' (' + fmtDMY(r.prev_date) + ')';
+
+                    // Check in: today's first punch (blank when absent)
+                    const checkIn = r.is_absent ? '' : fmtHM(r.first_punch);
+
+                    html += '<tr>'
+                         + '<td style="' + td + '">' + esc(r.user_id) + '</td>'
+                         + '<td style="' + td + '">' + esc(name) + (title ? BR + '<span style="font-size:9pt;">' + esc(title) + '</span>' : '') + '</td>'
+                         + '<td style="' + td + ' text-align:center;">' + esc(checkOut) + '</td>'
+                         + '<td style="' + td + ' text-align:center;">' + esc(checkIn) + '</td>'
+                         + '<td style="' + td + '"></td>'
+                         + '</tr>';
+
+                    plainLines.push([r.user_id, name + (title ? ' - ' + title : ''), checkOut, checkIn, ''].join('\t'));
+                });
+                html += '</table>';
+
+                copyHtmlToClipboard(html, plainLines.join('\n')).then(function() {
+                    showToast('Copied', 'Formatted report copied — paste it into Excel / Google Sheets');
+                }, function() {
+                    showToast('Error', 'Could not copy to clipboard');
+                });
+            })
+            .fail(function() {
+                showToast('Error', 'Failed to fetch attendance data for the report');
+            });
     });
 
     // --- User directory: prefer server-side storage via API, fallback to localStorage ---

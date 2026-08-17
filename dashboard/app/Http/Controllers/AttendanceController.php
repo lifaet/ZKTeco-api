@@ -155,6 +155,7 @@ class AttendanceController extends Controller
                 'recordsTotal' => $recordsTotal,
                 'recordsFiltered' => $recordsFiltered,
                 'data' => $paged,
+                'last_working_day' => $lastWorkingDay,
             ]);
         }
 

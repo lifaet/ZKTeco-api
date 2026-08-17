@@ -7,7 +7,7 @@ POLL_INTERVAL = 5  # seconds
 DB_HOST = '127.0.0.1'
 DB_USER = 'root'
 DB_PASS = 'root'
-DB_NAME = 'attendance_db'
+DB_NAME = 'zkteko-ams'
 TABLE_NAME = 'attendances'
 
 # For API server
