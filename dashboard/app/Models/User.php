@@ -12,10 +12,11 @@ class User extends Model
     protected $keyType = 'int';
 
     protected $fillable = [
-        'id', 'name', 'title', 'department', 'active'
+        'id', 'name', 'title', 'department', 'active', 'view_order'
     ];
 
     protected $casts = [
         'active' => 'boolean',
+        'view_order' => 'integer',
     ];
 }

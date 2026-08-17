@@ -98,9 +98,15 @@ class AttendanceController extends Controller
             $recordsTotal = count($data);
             $recordsFiltered = $recordsTotal;
 
-            // Sort by user_id
-            usort($data, function($a, $b) {
-                return $a['user_id'] <=> $b['user_id'];
+            // Sort by custom user view order (users without an order go last, sorted by user_id)
+            $orderMap = User::whereNotNull('view_order')->pluck('view_order', 'id')->toArray();
+            usort($data, function($a, $b) use ($orderMap) {
+                $oa = $orderMap[$a['user_id']] ?? PHP_INT_MAX;
+                $ob = $orderMap[$b['user_id']] ?? PHP_INT_MAX;
+                if ($oa === $ob) {
+                    return $a['user_id'] <=> $b['user_id'];
+                }
+                return $oa <=> $ob;
             });
 
             // Paginate

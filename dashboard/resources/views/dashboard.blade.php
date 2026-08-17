@@ -419,6 +419,7 @@ footer .maintenance a:hover {
                     <th>Name</th>
                     <th>Title</th>
                     <th>Department</th>
+                    <th>Order</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -472,6 +473,11 @@ footer .maintenance a:hover {
                     <div class="mb-3">
                         <label class="form-label">Department</label>
                         <input type="text" id="user-input-dept" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">View Order</label>
+                        <input type="number" id="user-input-order" class="form-control" min="0" placeholder="e.g. 1 (lower shows first in daily log)">
+                        <small class="text-muted">Controls the position of this user in the daily log. Leave empty to show after ordered users (sorted by ID).</small>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" id="user-input-active" class="form-check-input" checked>
@@ -1271,11 +1277,21 @@ $(document).ready(function(){
         const tbody = $('#userTable tbody');
         if (!tbody.length) return; // no user table on this page
         tbody.empty();
-        (window.userDirectory || []).forEach(function(s){
+        // sort by view_order (nulls last), then by id — same order as the daily log
+        const sorted = (window.userDirectory || []).slice().sort(function(a, b){
+            const oa = (a.view_order === null || a.view_order === undefined || a.view_order === '') ? Infinity : Number(a.view_order);
+            const ob = (b.view_order === null || b.view_order === undefined || b.view_order === '') ? Infinity : Number(b.view_order);
+            if (oa === ob) return (parseInt(a.id,10) || 0) - (parseInt(b.id,10) || 0);
+            return oa - ob;
+        });
+        sorted.forEach(function(s){
             const id = s.id;
             const name = s.name || '';
             const title = s.title || '';
             const dept = s.dept || s.department || '';
+            const hasOrder = !(s.view_order === null || s.view_order === undefined || s.view_order === '');
+            const orderVal = hasOrder ? Number(s.view_order) : '';
+            const orderSortVal = hasOrder ? Number(s.view_order) : 999999999;
             const active = s.active !== false; // default to true if not set
             const statusBadge = active 
                 ? '<span class="badge bg-success">Active</span>' 
@@ -1286,6 +1302,7 @@ $(document).ready(function(){
                 '<td>' + $('<div>').text(name).html() + '</td>' +
                 '<td>' + $('<div>').text(title).html() + '</td>' +
                 '<td>' + $('<div>').text(dept).html() + '</td>' +
+                '<td data-order="' + orderSortVal + '">' + (hasOrder ? orderVal : '<span class="text-muted">—</span>') + '</td>' +
                 '<td>' + statusBadge + '</td>' +
                 '<td>' +
                     '<button class="btn btn-sm btn-outline-primary user-edit" data-id="'+id+'"><i class="bi bi-pencil"></i></button> ' +
@@ -1306,7 +1323,7 @@ $(document).ready(function(){
             info: true,
             lengthChange: false,
             pageLength: 25,
-            order: [[0, 'asc']]
+            order: [[4, 'asc']]
         });
         try { if (st && st.columns && typeof st.columns.adjust === 'function') st.columns.adjust().draw(false); } catch(e) { console.debug('user columns.adjust failed', e); }
         // also ensure attendance table recalculates after user table operations
@@ -1322,6 +1339,7 @@ $(document).ready(function(){
         $('#user-input-name').val('');
         $('#user-input-title').val('');
         $('#user-input-dept').val('');
+        $('#user-input-order').val('');
         $('#user-input-active').prop('checked', true); // default to active
         $('#userModal').modal('show');
     });
@@ -1333,6 +1351,8 @@ $(document).ready(function(){
         const name = String($('#user-input-name').val() || '').trim();
         const title = String($('#user-input-title').val() || '').trim();
         const dept = String($('#user-input-dept').val() || '').trim();
+        const orderRaw = String($('#user-input-order').val() || '').trim();
+        const viewOrder = orderRaw === '' ? null : Number(orderRaw);
         const active = $('#user-input-active').is(':checked');
 
         if (!idVal || !name) {
@@ -1350,7 +1370,7 @@ $(document).ready(function(){
                 url: '/api/users/' + encodeURIComponent(originalId),
                 method: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify({ name: name, title: title, department: dept, active: active })
+                data: JSON.stringify({ name: name, title: title, department: dept, active: active, view_order: viewOrder })
             }).done(function(updated){
                 // update local copy with server response and refresh UI
                 const idx = window.userDirectory.findIndex(x => String(x.id) === String(originalId));
@@ -1371,7 +1391,7 @@ $(document).ready(function(){
             url: '/api/users',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept, active: active })
+            data: JSON.stringify({ id: isNaN(idVal) ? idVal : Number(idVal), name: name, title: title, department: dept, active: active, view_order: viewOrder })
         }).done(function(created){
             window.userDirectory = window.userDirectory || [];
             window.userDirectory.push(created);
@@ -1395,6 +1415,7 @@ $(document).ready(function(){
         $('#user-input-name').val(s.name || '');
         $('#user-input-title').val(s.title || '');
         $('#user-input-dept').val(s.dept || s.department || '');
+        $('#user-input-order').val((s.view_order === null || s.view_order === undefined) ? '' : s.view_order);
         $('#user-input-active').prop('checked', s.active !== false);
         $('#userModal').modal('show');
     });

@@ -10,7 +10,13 @@ class UserController extends Controller
     // GET /api/users
     public function index()
     {
-        return response()->json(User::orderBy('id')->get());
+        // Order by custom view_order (nulls last), then by id
+        return response()->json(
+            User::orderByRaw('CASE WHEN view_order IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('view_order')
+                ->orderBy('id')
+                ->get()
+        );
     }
 
     // Return the user page view
@@ -28,6 +34,7 @@ class UserController extends Controller
             'title' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'active' => 'sometimes|boolean',
+            'view_order' => 'nullable|integer',
         ]);
 
         // Ensure active is boolean
@@ -47,6 +54,7 @@ class UserController extends Controller
             'title' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'active' => 'sometimes|boolean',
+            'view_order' => 'nullable|integer',
         ]);
 
         // Ensure active is boolean
