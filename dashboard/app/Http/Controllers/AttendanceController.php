@@ -91,6 +91,9 @@ class AttendanceController extends Controller
 
                 $data[] = array_merge([
                     'user_id' => $userId,
+                    'name' => $user?->name ?? '',
+                    'title' => $user?->title ?? '',
+                    'department' => $user?->department ?? '',
                     'date' => $date,
                     'first_punch' => $inTime,
                     'last_punch' => $outTime,
@@ -109,6 +112,9 @@ class AttendanceController extends Controller
                 if (!in_array($user->id, $attendedUserIds)) {
                     $data[] = array_merge([
                         'user_id' => $user->id,
+                        'name' => $user->name ?? '',
+                        'title' => $user->title ?? '',
+                        'department' => $user->department ?? '',
                         'date' => $date,
                         'first_punch' => 'Absent',
                         'last_punch' => '',
