@@ -1439,7 +1439,7 @@ $(document).ready(function(){
 
                 let html = '<table style="border-collapse:collapse; font-family:Arial, sans-serif; font-size:11pt;">';
                 // Title (merged across 5 columns)
-                html += '<tr><td colspan="5" style="' + td + 'text-align:center; font-size:14pt; font-weight:bold;">'
+                html += '<tr><td colspan="5" style="' + td + 'text-align:center; font-size:16pt; font-weight:bold;">'
                      + 'Daily Attendance Record' + BR + 'Date: ' + fmtDMY(date) + '</td></tr>';
                 // Header row
                 const headers = ['AC-No.', 'Name', 'Check out (' + fmtDMY(lastWorkDay) + ')', 'Check in (' + fmtDMY(date) + ')', 'Remarks'];
